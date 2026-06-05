@@ -2,10 +2,7 @@
 // often shared with other school districts. Add an `href` (a public link, a
 // hosted PDF, or a Google Doc set to "anyone with the link can view") when each
 // one is ready to share publicly. Items without an href render as
-// "Available on request".
-//
-//  ⚠️  Items tagged  // VERIFY  came from the supplied briefs and were not
-//  confirmed against LinkedIn. Confirm role/wording before publishing.
+// "Available on request". Content confirmed with Luke on 2026-06-05.
 
 export type GuidanceItem = {
   title: string;
@@ -42,7 +39,6 @@ export const GUIDANCE: GuidanceItem[] = [
     status: 'Draft',
     description:
       'A configuration map and “3-in-3 Challenge” to help districts benchmark AI maturity, with verification and state-level badging to recognize districts doing the work.',
-    // VERIFY: role + status; from the Gemini brief
   },
   {
     title: 'District AI Guidance & Acceptable-Use Framework',
@@ -53,11 +49,11 @@ export const GUIDANCE: GuidanceItem[] = [
       'Locally adapted guidance translating statewide principles into day-to-day practice for staff and students — written for real classrooms, not press releases.',
   },
   {
-    title: 'AZ AI Alliance / GPEMC Newsletter',
-    org: 'AZ AI Alliance · GPEMC / AZEMC',
+    title: 'AI Newsletter',
+    org: 'Arizona AI Alliance',
     year: '2025–2026',
     status: 'Published',
     description:
-      'Curator and author — synthesizing research-to-practice trends, district case studies, and practical AI guidance for Arizona education leaders.', // VERIFY: GPEMC/AZEMC full names + your exact role
+      'Curator and author — synthesizing research-to-practice trends, district case studies, and practical AI guidance for Arizona education leaders.',
   },
 ];

@@ -3,13 +3,9 @@
 // Single source of truth for the CV page and the home page's
 // "Speaking & Community" and "Toolkit" sections.
 //
-// Content sources: Luke's LinkedIn (verified), plus the
-// chatgpt/gemini briefs he supplied (derived from his Gmail/
-// Drive/Calendar).
-//
-//  ⚠️  Items tagged  // VERIFY  are real-sounding but were NOT
-//  corroborated by LinkedIn. Wording has been kept defensible.
-//  Confirm (and sharpen) each before relying on it publicly.
+// Content sources: Luke's LinkedIn, plus the chatgpt/gemini
+// briefs he supplied (derived from his Gmail/Drive/Calendar).
+// Claims were reviewed and confirmed with Luke on 2026-06-05.
 // ============================================================
 
 export const ABOUT = `I help schools turn fast-moving technology into something people can actually use. As Director of Innovative Solutions at the Agua Fria Union High School District, I lead the practical, human side of AI and edtech adoption — building tools, writing guidance, and growing the learning communities that let educators move with confidence.
@@ -92,15 +88,13 @@ export type AffiliationItem = { org: string; role: string; detail?: string; veri
 export const AFFILIATIONS: AffiliationItem[] = [
   {
     org: 'Arizona AI Alliance',
-    role: 'Core team / contributor',
+    role: 'Core team member',
     detail: 'Statewide collaboration on responsible AI in education; contributing author on the Arizona AI Guidance.',
-    verify: true, // VERIFY: exact role/title with the Alliance ("core team" vs "contributor")
   },
   {
     org: 'BRIDGE Consulting',
-    role: 'Co-founder / consultant',
-    detail: 'AI advisory and professional learning for schools, networks, and nonprofits across Arizona.',
-    verify: true, // VERIFY: this role isn't on LinkedIn — confirm name, title, and whether to feature it publicly
+    role: 'Partner & co-founder',
+    detail: 'AI advisory, training, and operational support for education systems and nonprofits.',
   },
 ];
 
@@ -122,20 +116,11 @@ export const SPEAKING: SpeakingItem[] = [
     note: 'Featured speaker for the public release of the updated statewide generative-AI guidance for Arizona schools.',
   },
   {
-    title: 'The Gemini Lab: Moving Beyond the Chatbot',
-    venue: 'Canyon View High School · with Google for Education & Trafera',
-    year: '2026',
-    kind: 'Workshop',
-    note: 'Host and co-presenter for an immersive workshop with tracks for instructional leaders, CTOs, and IT — NotebookLM knowledge bases and no-code AI agents in Workspace.',
-    verify: true, // VERIFY: details from the Gemini brief; confirm date, partners, and title
-  },
-  {
     title: 'Regional K-12 AI Alliance Frameworks',
     venue: 'CoSN National Conference',
     year: '2026',
     kind: 'Session',
     note: 'Shared organizational leadership strategies and lessons from building a regional AI alliance.',
-    verify: true, // VERIFY: confirm you presented at CoSN National + the exact session
   },
   {
     title: 'Vibe Coding for Educators',
@@ -153,11 +138,10 @@ export const SPEAKING: SpeakingItem[] = [
   },
   {
     title: 'Superintendent AI Professional Development',
-    venue: 'GPEMC / AZEMC',
+    venue: 'Arizona AI Alliance',
     year: '2026',
     kind: 'Workshop',
     note: 'Co-led an executive session on guardrails, district AI policy, and administrative productivity for Arizona superintendents.',
-    verify: true, // VERIFY: confirm GPEMC/AZEMC names + your role
   },
 ];
 
@@ -171,9 +155,8 @@ export type CommitteeItem = {
 export const COMMITTEES: CommitteeItem[] = [
   {
     org: 'Arizona AI Alliance',
-    role: 'Core team / contributor',
-    detail: 'Contributor to the 2026 Arizona AI Guidance and statewide AI strategy for education.',
-    verify: true, // VERIFY: exact role
+    role: 'Core team member',
+    detail: 'Contributing author on the 2026 Arizona AI Guidance and statewide AI strategy for education.',
   },
   {
     org: 'AzTEA (Arizona Technology in Education Association)',
@@ -189,12 +172,6 @@ export const COMMITTEES: CommitteeItem[] = [
     org: 'AI Learning Network — Community of Practice',
     role: 'Founder / Facilitator',
     detail: 'A cross-district monthly forum for edtech practitioners to share what’s working and work through hard implementation questions.',
-  },
-  {
-    org: 'State AI Data Privacy Guidance Committee',
-    role: 'Working group member',
-    detail: 'Outlining the intersection of Arizona law, parental consent, and learning analytics.',
-    verify: true, // VERIFY: confirm committee name + membership
   },
 ];
 
@@ -226,7 +203,7 @@ export const EDUCATION: CredItem[] = [
   {
     name: 'Arizona State University',
     org: 'Arizona State University',
-    detail: '', // TODO: confirm degree + field + years
+    detail: 'Master of Education (M.Ed.), 2015',
   },
 ];
 
