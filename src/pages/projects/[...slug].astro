@@ -1,0 +1,74 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).filter((p) => !p.data.draft);
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+---
+
+<Base title={d.title} description={d.summary} path={`/projects/${project.id}`}>
+  <article class="section">
+    <div class="wrap">
+      <a class="back" href="/#work">← Selected work</a>
+
+      <header class="proj-head prose">
+        <div class="meta">
+          {d.kind && <span class="chip">{d.kind}</span>}
+          {d.year && <span class="year">{d.year}</span>}
+        </div>
+        <h1>{d.title}</h1>
+        <p class="standfirst">{d.summary}</p>
+        {(d.demo || d.source) && (
+          <div class="proj-links">
+            {d.demo && <a class="btn" href={d.demo}>Live demo</a>}
+            {d.source && <a class="btn btn-ghost" href={d.source}>Source</a>}
+          </div>
+        )}
+      </header>
+
+      <div class="essay prose">
+        <Content />
+      </div>
+
+      {d.tags.length > 0 && (
+        <div class="tags prose">
+          {d.tags.map((t) => <span class="chip">{t}</span>)}
+        </div>
+      )}
+
+      <a class="back" href="/#work">← Selected work</a>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .back {
+    display: inline-block; font-size: 0.9rem; color: var(--ink-2);
+    text-decoration: none; margin-bottom: 2.5rem;
+  }
+  .back:last-child { margin-top: 3rem; margin-bottom: 0; }
+  .back:hover { color: var(--accent-deep); }
+
+  .proj-head { margin-bottom: 2.5rem; }
+  .meta { display: flex; gap: 0.75rem; align-items: center; }
+  .year { color: var(--ink-3); font-size: 0.85rem; }
+  .proj-head h1 { font-size: var(--step-3); margin-top: 1rem; }
+  .standfirst {
+    margin-top: 1rem; font-size: var(--step-1); line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .proj-links { margin-top: 1.75rem; display: flex; gap: 0.85rem; flex-wrap: wrap; }
+  .tags {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line-soft);
+  }
+</style>

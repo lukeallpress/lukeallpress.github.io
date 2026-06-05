@@ -1,0 +1,57 @@
+---
+import { SITE, SOCIAL } from '../consts';
+const year = 2026; // build-time constant; update as needed
+---
+
+<footer class="site-footer">
+  <div class="wrap inner">
+    <div class="left">
+      <p class="name">Luke Allpress</p>
+      <p class="muted">{SITE.tagline}</p>
+      <p class="muted">{SITE.location}</p>
+    </div>
+    <nav class="links" aria-label="Elsewhere">
+      <ul>
+        {SOCIAL.map((s) => (
+          <li><a href={s.href} rel="me">{s.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+  <div class="wrap rule">
+    <p class="fineprint">© {year} Luke Allpress. Built with Astro, hosted on GitHub Pages.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--line);
+    background: var(--paper-sunk);
+    margin-top: 2rem;
+  }
+  .inner {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+    padding-block: clamp(2.5rem, 6vw, 4rem) 1.5rem;
+  }
+  .name {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    color: var(--ink);
+  }
+  .muted { color: var(--ink-2); font-size: 0.95rem; }
+  .links ul {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; gap: 1.4rem; flex-wrap: wrap;
+  }
+  .links a {
+    font-size: 0.95rem; color: var(--ink-2);
+    text-decoration: none; border-bottom: 1px solid var(--line);
+    padding-bottom: 2px;
+  }
+  .links a:hover { color: var(--accent-deep); border-color: var(--accent); }
+  .rule { border-top: 1px solid var(--line); padding-block: 1.25rem 2rem; }
+  .fineprint { font-size: 0.8rem; color: var(--ink-3); }
+</style>

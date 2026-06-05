@@ -1,0 +1,207 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, SOCIAL } from '../consts';
+import {
+  EXPERIENCE, AFFILIATIONS, SPEAKING, COMMITTEES, SKILLS, EDUCATION, CERTS,
+} from '../data/profile';
+import { GUIDANCE } from '../data/guidance';
+---
+
+<Base title="CV" description="Curriculum vitae for Luke Allpress — education technology and AI leader." path="/cv">
+  <section class="section">
+    <div class="wrap cv">
+      <header class="cv-head">
+        <div>
+          <p class="eyebrow">Curriculum Vitae</p>
+          <h1>Luke Allpress</h1>
+          <p class="cv-role">{SITE.role} · {SITE.location}</p>
+        </div>
+        <div class="cv-contact">
+          {SOCIAL.map((s) => <a href={s.href}>{s.label}</a>)}
+          <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
+        </div>
+      </header>
+
+      <!-- Experience -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Experience</h2>
+        {EXPERIENCE.map((e) => (
+          <div class="entry">
+            <div class="entry-dates">{e.start} — {e.end}</div>
+            <div class="entry-main">
+              <h3>{e.role}{e.current && <span class="now">Current</span>}</h3>
+              <p class="entry-org">{e.org}{e.location ? ` · ${e.location}` : ''}</p>
+              {e.summary && <p class="entry-summary">{e.summary}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Affiliations -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Affiliations</h2>
+        {AFFILIATIONS.map((a) => (
+          <div class="entry">
+            <div class="entry-dates"></div>
+            <div class="entry-main">
+              <h3>{a.org}</h3>
+              <p class="entry-org">{a.role}</p>
+              {a.detail && <p class="entry-summary">{a.detail}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Speaking -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Selected Speaking</h2>
+        {SPEAKING.map((s) => (
+          <div class="entry">
+            <div class="entry-dates">{s.year}</div>
+            <div class="entry-main">
+              <h3>{s.title} <span class="kind">{s.kind}</span></h3>
+              <p class="entry-org">{s.venue}</p>
+              {s.note && <p class="entry-summary">{s.note}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Committees & Service -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Committees & Service</h2>
+        {COMMITTEES.map((c) => (
+          <div class="entry">
+            <div class="entry-dates"></div>
+            <div class="entry-main">
+              <h3>{c.org}</h3>
+              <p class="entry-org">{c.role}</p>
+              {c.detail && <p class="entry-summary">{c.detail}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Guidance & Publications -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Guidance & Publications</h2>
+        {GUIDANCE.map((g) => (
+          <div class="entry">
+            <div class="entry-dates">{g.year}</div>
+            <div class="entry-main">
+              <h3>{g.href ? <a href={g.href}>{g.title}</a> : g.title}</h3>
+              <p class="entry-org">{g.org}{g.status ? ` · ${g.status}` : ''}</p>
+              {g.description && <p class="entry-summary">{g.description}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Toolkit -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Toolkit</h2>
+        <div class="skills">
+          {SKILLS.map((g) => (
+            <div class="skill-group">
+              <h3>{g.label}</h3>
+              <p>{g.items.join(' · ')}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Education & Credentials -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Education & Credentials</h2>
+        {EDUCATION.map((ed) => (
+          <div class="entry">
+            <div class="entry-dates"></div>
+            <div class="entry-main">
+              <h3>{ed.name}</h3>
+              {ed.detail && <p class="entry-org">{ed.detail}</p>}
+            </div>
+          </div>
+        ))}
+        {CERTS.map((c) => (
+          <div class="entry">
+            <div class="entry-dates"></div>
+            <div class="entry-main">
+              <h3>{c.name}</h3>
+              <p class="entry-org">{c.org}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .cv { max-width: 58rem; }
+  .cv-head {
+    display: flex; justify-content: space-between; gap: 2rem;
+    flex-wrap: wrap; align-items: flex-end;
+    padding-bottom: 2rem; margin-bottom: 1rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .cv-head h1 { font-size: var(--step-3); margin-top: 0.5rem; }
+  .cv-role { color: var(--ink-2); margin-top: 0.5rem; font-size: var(--step-0); }
+  .cv-contact { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+  .cv-contact a { font-size: 0.9rem; color: var(--ink-2); }
+  .print-btn {
+    margin-top: 0.5rem; font-family: var(--sans); font-size: 0.8rem;
+    color: var(--ink-2); background: transparent;
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 0.4em 0.8em; cursor: pointer; transition: border-color 0.18s ease, color 0.18s ease;
+  }
+  .print-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+  .cv-block { padding-block: 2rem; }
+  .cv-block + .cv-block { border-top: 1px solid var(--line-soft); }
+  .cv-h2 {
+    font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--accent-deep); font-family: var(--sans); font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr;
+    gap: 1.5rem;
+    padding-block: 0.9rem;
+  }
+  .entry + .entry { border-top: 1px solid var(--line-soft); }
+  .entry-dates { color: var(--ink-3); font-size: 0.85rem; padding-top: 0.3rem; }
+  .entry-main h3 {
+    font-size: var(--step-0); font-family: var(--sans); font-weight: 600;
+    letter-spacing: -0.005em; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  }
+  .now {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent-deep); background: var(--accent-wash);
+    border: 1px solid var(--line); border-radius: 999px; padding: 0.1em 0.6em;
+  }
+  .kind { font-size: 0.75rem; font-weight: 500; color: var(--ink-3); }
+  .entry-org { color: var(--ink-2); font-size: 0.92rem; margin-top: 0.2rem; }
+  .entry-summary { color: var(--ink-2); font-size: 0.92rem; margin-top: 0.45rem; line-height: 1.55; }
+
+  .skills { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem 2rem; }
+  .skill-group h3 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: var(--sans); font-weight: 600; color: var(--ink);
+  }
+  .skill-group p { color: var(--ink-2); font-size: 0.92rem; margin-top: 0.35rem; }
+
+  @media (max-width: 40rem) {
+    .entry { grid-template-columns: 1fr; gap: 0.3rem; }
+    .cv-contact { align-items: flex-start; }
+    .skills { grid-template-columns: 1fr; }
+  }
+
+  /* Clean print output */
+  @media print {
+    :global(.site-header), :global(.site-footer), .cv-contact, .back { display: none !important; }
+    .cv-block { break-inside: avoid; }
+    .entry { break-inside: avoid; }
+  }
+</style>

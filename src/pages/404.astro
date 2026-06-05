@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Not found" path="/404">
+  <section class="section">
+    <div class="wrap prose nf">
+      <p class="eyebrow">404</p>
+      <h1>This page wandered off.</h1>
+      <p>The thing you were looking for isn't here. Let's get you back on track.</p>
+      <p><a class="btn" href="/">Back home</a></p>
+    </div>
+  </section>
+</Base>
+<style>
+  .nf { padding-block: clamp(3rem, 10vw, 7rem); }
+  .nf h1 { font-size: var(--step-3); margin-top: 0.5rem; }
+  .nf p { color: var(--ink-2); margin-top: 1rem; font-size: var(--step-1); }
+  .nf .btn { margin-top: 1.5rem; }
+</style>

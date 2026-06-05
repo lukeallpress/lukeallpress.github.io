@@ -1,0 +1,84 @@
+---
+import { NAV, SITE } from '../consts';
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/writing' ? path.startsWith('/writing')
+  : href === '/cv' ? path.startsWith('/cv')
+  : false;
+---
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a href="/" class="brand" aria-label={`${SITE.name} — home`}>
+      <span class="brand-name">Luke Allpress</span>
+      <span class="brand-sub">{SITE.role}</span>
+    </a>
+    <nav aria-label="Primary">
+      <ul>
+        {NAV.map((item) => (
+          <li>
+            <a href={item.href} class:list={['nav-link', { active: isActive(item.href) }]}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--paper) 86%, transparent);
+    backdrop-filter: saturate(1.2) blur(8px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-height: 4.25rem;
+  }
+  .brand { display: grid; line-height: 1.15; text-decoration: none; }
+  .brand-name {
+    font-family: var(--serif);
+    font-size: 1.18rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .brand-sub {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: clamp(0.85rem, 2.5vw, 1.9rem);
+    padding: 0;
+    margin: 0;
+  }
+  .nav-link {
+    font-size: 0.95rem;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding-block: 0.3rem;
+    border-bottom: 1.5px solid transparent;
+    transition: color 0.18s ease, border-color 0.18s ease;
+  }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link.active { color: var(--ink); border-color: var(--accent); }
+
+  @media (max-width: 38rem) {
+    .brand-sub { display: none; }
+    nav ul { gap: 0.95rem; }
+    .nav-link { font-size: 0.88rem; }
+  }
+</style>

@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE } from '../consts';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Path-only canonical, e.g. "/writing". Defaults to current path. */
+  path?: string;
+}
+
+const { title, description, path } = Astro.props;
+const pageTitle = title ? `${title} · ${SITE.name}` : SITE.title;
+const desc = description ?? SITE.description;
+const canonical = new URL(path ?? Astro.url.pathname, SITE.url).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={desc} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <!-- JSON-LD: helps search engines render this as a real person profile -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: SITE.name,
+      jobTitle: 'Director of Innovative Solutions',
+      address: { '@type': 'PostalAddress', addressLocality: 'Phoenix', addressRegion: 'AZ' },
+      url: SITE.url,
+      sameAs: ['https://www.linkedin.com/in/lukeallpress'],
+    })} />
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

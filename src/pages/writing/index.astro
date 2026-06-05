@@ -1,0 +1,69 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const posts = (await getCollection('writing'))
+  .filter((w) => !w.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+---
+
+<Base title="Writing" description="Essays and reflections by Luke Allpress on AI, education technology, and leadership." path="/writing">
+  <section class="section">
+    <div class="wrap">
+      <header class="page-head prose">
+        <p class="eyebrow">Writing</p>
+        <h1>Notes & reflections</h1>
+        <p class="lede">
+          Short, mostly introspective pieces on building with AI, leading change in
+          schools, and the human side of education technology.
+        </p>
+      </header>
+
+      <ul class="post-list">
+        {posts.map((w) => (
+          <li>
+            <a class="post-row" href={`/writing/${w.id}`}>
+              <time datetime={w.data.date.toISOString()}>{fmt(w.data.date)}</time>
+              <div class="post-main">
+                <h2>{w.data.title}</h2>
+                <p>{w.data.summary}</p>
+                {w.data.tags.length > 0 && (
+                  <div class="tags">{w.data.tags.map((t) => <span class="chip">{t}</span>)}</div>
+                )}
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-head { margin-bottom: 3rem; }
+  .page-head h1 { font-size: var(--step-3); margin-top: 0.5rem; }
+  .lede { margin-top: 1rem; font-size: var(--step-1); color: var(--ink-2); line-height: 1.5; }
+
+  .post-list { list-style: none; padding: 0; margin: 0; }
+  .post-list li + li { border-top: 1px solid var(--line-soft); }
+  .post-row {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 1.75rem;
+    padding-block: 2rem;
+    text-decoration: none;
+    align-items: baseline;
+  }
+  .post-row time { color: var(--ink-3); font-size: 0.9rem; padding-top: 0.45rem; }
+  .post-main h2 { font-size: var(--step-2); transition: color 0.18s ease; }
+  .post-row:hover .post-main h2 { color: var(--accent-deep); }
+  .post-main p { color: var(--ink-2); margin-top: 0.5rem; max-width: 60ch; }
+  .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem; }
+  @media (max-width: 40rem) {
+    .post-row { grid-template-columns: 1fr; gap: 0.5rem; }
+    .post-row time { padding-top: 0; }
+  }
+</style>
