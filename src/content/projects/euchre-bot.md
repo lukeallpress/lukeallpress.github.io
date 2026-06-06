@@ -1,7 +1,7 @@
 ---
 title: Euchre Bot
 summary: A playable euchre bot — a for-the-joy-of-it demo that doubles as a friendly way to show people what "building with AI" actually looks like.
-order: 2
+order: 5
 kind: Game / Demo
 year: 2025
 tags: ['Demo', 'Games', 'AI']

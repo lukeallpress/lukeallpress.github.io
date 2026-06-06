@@ -16,7 +16,7 @@ My north star is simple: make complicated things simple. That looks like distric
 
 // Short bios for reuse (speaker intros, etc.)
 export const BIO_SHORT =
-  'Luke Allpress is a K-12 innovation and technology leader focused on responsible AI implementation, practical tool-building, and the human side of educational change — across district systems, statewide guidance, professional learning, and public writing in Arizona education.';
+  'Luke Allpress is a K12 innovation and technology leader focused on responsible AI implementation, practical tool-building, and the human side of educational change — across district systems, statewide guidance, professional learning, and public writing in Arizona education.';
 
 export type ExperienceItem = {
   org: string;
@@ -114,18 +114,33 @@ export type SpeakingItem = {
 
 export const SPEAKING: SpeakingItem[] = [
   {
+    title: 'Human-Centered Design for Education',
+    venue: 'AzTEA CI&IT Symposium',
+    year: 'Apr 2025',
+    kind: 'Keynote',
+    note: 'Keynote blending Universal Design for Learning and human-centered design — bringing the NETP pillars of Access, Design, and Use to life so districts build systems that actually work for the humans in them.',
+  },
+  {
+    title: 'AI vs. Hackers: K12 Defense Against Phishing Attacks',
+    venue: 'CoSN 2026 Annual Conference',
+    year: '2026',
+    kind: 'Session',
+    note: 'Using AI to strengthen K12 cyber defenses against phishing and social-engineering attacks.',
+  },
+  {
+    title: 'Driving K12 Innovation: AI in Practice',
+    venue: 'CoSN — Driving K12 Innovation',
+    year: '2025',
+    kind: 'Session',
+    note: 'Shared the district’s applied AI work as part of CoSN’s Driving K12 Innovation initiative.',
+    verify: true, // VERIFY: confirm exact session/format for the second CoSN engagement
+  },
+  {
     title: '2026 Arizona AI Guidance — State Launch Webinar',
     venue: 'AZ AI Alliance',
     year: '2026',
-    kind: 'Panel',
+    kind: 'Webinar',
     note: 'Featured speaker for the public release of the updated statewide generative-AI guidance for Arizona schools.',
-  },
-  {
-    title: 'Regional K-12 AI Alliance Frameworks',
-    venue: 'CoSN National Conference',
-    year: '2026',
-    kind: 'Session',
-    note: 'Shared organizational leadership strategies and lessons from building a regional AI alliance.',
   },
   {
     title: 'Vibe Coding for Educators',
@@ -141,13 +156,6 @@ export const SPEAKING: SpeakingItem[] = [
     kind: 'Session',
     note: 'District web-app features, an MCP server for safe agentic tasks, and self-hosted open-source LLMs.',
   },
-  {
-    title: 'Superintendent AI Professional Development',
-    venue: 'Arizona AI Alliance',
-    year: '2026',
-    kind: 'Workshop',
-    note: 'Co-led an executive session on guardrails, district AI policy, and administrative productivity for Arizona superintendents.',
-  },
 ];
 
 export type CommitteeItem = {
@@ -158,6 +166,11 @@ export type CommitteeItem = {
 };
 
 export const COMMITTEES: CommitteeItem[] = [
+  {
+    org: 'CoSN Driving K12 Innovation Advisory Board',
+    role: 'Advisory board member',
+    detail: 'Member of CoSN’s global advisory board producing the Driving K12 Innovation trend reports on emerging technology in teaching and learning.',
+  },
   {
     org: 'Arizona AI Alliance',
     role: 'Core team member',
@@ -209,6 +222,11 @@ export const EDUCATION: CredItem[] = [
     name: 'Arizona State University',
     org: 'Arizona State University',
     detail: 'Master of Education (M.Ed.), 2015',
+  },
+  {
+    name: 'University of Washington',
+    org: 'University of Washington',
+    detail: 'B.S. Bioengineering, with Honors, 2013',
   },
 ];
 

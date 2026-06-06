@@ -24,7 +24,7 @@ export const GUIDANCE: GuidanceItem[] = [
     // href: 'https://…',  // add the public link to the released guidance
   },
   {
-    title: 'K-12 AI Data Privacy & App-Vetting Checklist',
+    title: 'K12 AI Data Privacy & App-Vetting Checklist',
     org: 'Arizona education community',
     year: '2025',
     status: 'Published',

@@ -1,7 +1,7 @@
 ---
 title: Partnership Tracker
 summary: A web app that gives the district one clear view of its community and business partnerships — who we work with, what's active, and where the next opportunity is.
-order: 1
+order: 2
 kind: Web app
 year: 2025
 tags: ['Python', 'Dash', 'SQL', 'District tools']

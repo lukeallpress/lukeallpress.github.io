@@ -1,7 +1,7 @@
 ---
 title: Open Enrollment Routing Automation
 summary: A spreadsheet-driven tool that automatically routes open-enrollment applications to the right school site — no developer needed to keep it running.
-order: 5
+order: 6
 kind: Internal tool
 year: 2025
 tags: ['Automation', 'Google Apps Script', 'District tools']
