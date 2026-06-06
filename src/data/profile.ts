@@ -41,12 +41,12 @@ export const EXPERIENCE: ExperienceItem[] = [
   },
   {
     org: 'Arizona Technology in Education Association (AzTEA)',
-    role: 'Board Secretary',
-    start: 'Jun 2024',
+    role: 'Board President-Elect',
+    start: 'Jun 2026',
     end: 'Present',
     current: true,
     summary:
-      'Board officer for Arizona’s ISTE affiliate and CoSN state chapter. Board member since June 2023. Lead statewide initiatives including the AzTEA Trusted Learning Environment (TLE) cohort.',
+      'Elected to lead Arizona’s ISTE affiliate and CoSN state chapter. Previously Board Secretary (2024–2026); board member since 2023. Lead statewide initiatives including the AzTEA Trusted Learning Environment (TLE) cohort.',
   },
   {
     org: 'Agua Fria Union High School District',
@@ -88,7 +88,7 @@ export type AffiliationItem = { org: string; role: string; detail?: string; veri
 export const AFFILIATIONS: AffiliationItem[] = [
   {
     org: 'AzTEA (Arizona Technology in Education Association)',
-    role: 'Executive Board Member',
+    role: 'Board President-Elect',
     detail: 'Arizona’s CoSN chapter and ISTE / ASCD affiliate.',
   },
   {
@@ -194,8 +194,8 @@ export const COMMITTEES: CommitteeItem[] = [
   },
   {
     org: 'AzTEA (Arizona Technology in Education Association)',
-    role: 'Board Secretary',
-    detail: 'Arizona’s ISTE affiliate and CoSN state chapter.',
+    role: 'Board President-Elect',
+    detail: 'Arizona’s ISTE affiliate and CoSN state chapter. Previously Board Secretary.',
   },
   {
     org: 'AzTEA Trusted Learning Environment (TLE) Cohort',
