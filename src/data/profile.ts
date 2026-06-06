@@ -87,6 +87,11 @@ export type AffiliationItem = { org: string; role: string; detail?: string; veri
 
 export const AFFILIATIONS: AffiliationItem[] = [
   {
+    org: 'AzTEA (Arizona Technology in Education Association)',
+    role: 'Executive Board Member',
+    detail: 'Arizona’s CoSN chapter and ISTE / ASCD affiliate.',
+  },
+  {
     org: 'Arizona AI Alliance',
     role: 'Core team member',
     detail: 'Statewide collaboration on responsible AI in education; contributing author on the Arizona AI Guidance.',
