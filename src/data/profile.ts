@@ -128,12 +128,12 @@ export const SPEAKING: SpeakingItem[] = [
     note: 'Using AI to strengthen K12 cyber defenses against phishing and social-engineering attacks.',
   },
   {
-    title: 'Driving K12 Innovation: AI in Practice',
-    venue: 'CoSN — Driving K12 Innovation',
+    title: 'Cybersecurity for K12 School Districts',
+    venue: 'CoSN 2025 Annual Conference',
     year: '2025',
     kind: 'Session',
-    note: 'Shared the district’s applied AI work as part of CoSN’s Driving K12 Innovation initiative.',
-    verify: true, // VERIFY: confirm exact session/format for the second CoSN engagement
+    note: 'Practical cybersecurity strategies for protecting district systems and student data.',
+    verify: true, // VERIFY: confirm the exact 2025 CoSN session title
   },
   {
     title: '2026 Arizona AI Guidance — State Launch Webinar',
@@ -155,6 +155,22 @@ export const SPEAKING: SpeakingItem[] = [
     year: '2026',
     kind: 'Session',
     note: 'District web-app features, an MCP server for safe agentic tasks, and self-hosted open-source LLMs.',
+  },
+  {
+    title: 'AI Implementation in K12',
+    venue: 'Arizona CIO/CTO Summit',
+    year: '2024',
+    kind: 'Session',
+    note: 'Moving districts from AI curiosity to responsible, practical implementation.',
+    verify: true, // VERIFY: confirm exact event name + year with Luke
+  },
+  {
+    title: 'Data-Informed RTI Systems',
+    venue: 'Arizona CIO/CTO Summit',
+    year: '2023',
+    kind: 'Session',
+    note: 'Designing Response-to-Intervention systems that make good use of staff and student time.',
+    verify: true, // VERIFY: confirm exact event name + year with Luke
   },
 ];
 
@@ -212,6 +228,17 @@ export const SKILLS: SkillGroup[] = [
   {
     label: 'Practice',
     items: ['AI guidance & policy', 'Data privacy (CoSN TLE)', 'Professional learning & facilitation', 'Change leadership'],
+  },
+];
+
+export type AwardItem = { name: string; org: string; year: string; detail?: string };
+
+export const AWARDS: AwardItem[] = [
+  {
+    name: 'District Team Leadership Award',
+    org: 'CoSN (Consortium for School Networking)',
+    year: '2025',
+    detail: 'Awarded to Agua Fria UHSD’s Innovative Solutions Department for building in-house apps that support students and staff district-wide.',
   },
 ];
 

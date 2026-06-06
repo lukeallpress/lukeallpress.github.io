@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { SITE, SOCIAL } from '../consts';
 import {
-  EXPERIENCE, AFFILIATIONS, SPEAKING, COMMITTEES, SKILLS, EDUCATION, CERTS,
+  EXPERIENCE, AFFILIATIONS, AWARDS, SPEAKING, COMMITTEES, SKILLS, EDUCATION, CERTS,
 } from '../data/profile';
 import { GUIDANCE } from '../data/guidance';
 ---
@@ -46,6 +46,21 @@ import { GUIDANCE } from '../data/guidance';
             <div class="entry-main">
               <h3>{a.org}</h3>
               <p class="entry-org">{a.role}</p>
+              {a.detail && <p class="entry-summary">{a.detail}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Awards & Recognition -->
+      <div class="cv-block">
+        <h2 class="cv-h2">Awards & Recognition</h2>
+        {AWARDS.map((a) => (
+          <div class="entry">
+            <div class="entry-dates">{a.year}</div>
+            <div class="entry-main">
+              <h3>{a.name}</h3>
+              <p class="entry-org">{a.org}</p>
               {a.detail && <p class="entry-summary">{a.detail}</p>}
             </div>
           </div>
