@@ -4,6 +4,7 @@ summary: An interactive reading guide that turns Arizona's 41-page 2026 Generati
 order: 1
 kind: Web app
 year: 2026
+status: Live
 tags: ['AI guidance', 'Web app', 'Education']
 demo: 'https://lukeallpress.github.io/az-ai-guidance-companion/'
 featured: true

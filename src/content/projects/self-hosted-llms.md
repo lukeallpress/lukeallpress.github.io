@@ -1,7 +1,7 @@
 ---
 title: Self-Hosted Open-Source LLMs
 summary: Standing up open-source language models on district hardware — for privacy, cost control, and the freedom to experiment without sending student data anywhere.
-order: 4
+order: 7
 kind: Infrastructure
 year: 2025
 tags: ['LLMs', 'Infrastructure', 'Data Privacy']

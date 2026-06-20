@@ -67,7 +67,12 @@ const fmt = (d: Date) =>
         {projects.map((p) => (
           <article class="card">
             <div class="card-top">
-              {p.data.kind && <span class="chip">{p.data.kind}</span>}
+              <span class="card-tags">
+                {p.data.kind && <span class="chip">{p.data.kind}</span>}
+                {p.data.status && (
+                  <span class:list={['chip', 'status', { live: p.data.status === 'Live' }]}>{p.data.status}</span>
+                )}
+              </span>
               {p.data.year && <span class="card-year">{p.data.year}</span>}
             </div>
             <h3><a href={`/projects/${p.id}`}>{p.data.title}</a></h3>
@@ -283,7 +288,13 @@ const fmt = (d: Date) =>
     border-color: var(--line);
   }
   .card-top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+  .card-tags { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
   .card-year { font-size: var(--step--1); color: var(--ink-3); }
+  .chip.status { background: transparent; color: var(--ink-3); border-color: var(--line); }
+  .chip.status.live {
+    color: var(--accent-deep); background: var(--accent-wash);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
   .card h3 { font-size: var(--step-1); }
   .card h3 a { text-decoration: none; }
   .card h3 a:hover { color: var(--accent-deep); }

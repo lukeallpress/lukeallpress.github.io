@@ -27,6 +27,8 @@ const projects = defineCollection({
     // Short category label, e.g. "Web app", "Bot", "Infrastructure"
     kind: z.string().optional(),
     year: z.coerce.string().optional(),
+    // Maturity badge: e.g. "Live", "Prototype", "Demo", "Internal". Omit to hide.
+    status: z.string().optional(),
     tags: z.array(z.string()).default([]),
     // Optional live demo + source links. Leave blank to hide the link.
     demo: z.string().optional(),

@@ -1,7 +1,7 @@
 ---
 title: District MCP Server
 summary: An in-house Model Context Protocol server that lays the groundwork for safe, auditable agentic tasks across district systems.
-order: 3
+order: 5
 kind: Infrastructure
 year: 2025
 tags: ['Agentic AI', 'Infrastructure', 'MCP']

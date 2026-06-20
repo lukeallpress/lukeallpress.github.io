@@ -23,6 +23,9 @@ const d = project.data;
       <header class="proj-head prose">
         <div class="meta">
           {d.kind && <span class="chip">{d.kind}</span>}
+          {d.status && (
+            <span class:list={['chip', 'status', { live: d.status === 'Live' }]}>{d.status}</span>
+          )}
           {d.year && <span class="year">{d.year}</span>}
         </div>
         <h1>{d.title}</h1>
@@ -59,8 +62,13 @@ const d = project.data;
   .back:hover { color: var(--accent-deep); }
 
   .proj-head { margin-bottom: 2.5rem; }
-  .meta { display: flex; gap: 0.75rem; align-items: center; }
+  .meta { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
   .year { color: var(--ink-3); font-size: 0.85rem; }
+  .chip.status { background: transparent; color: var(--ink-3); border-color: var(--line); }
+  .chip.status.live {
+    color: var(--accent-deep); background: var(--accent-wash);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
   .proj-head h1 { font-size: var(--step-3); margin-top: 1rem; }
   .standfirst {
     margin-top: 1rem; font-size: var(--step-1); line-height: 1.5;
