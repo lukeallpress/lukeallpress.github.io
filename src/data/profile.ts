@@ -121,11 +121,11 @@ export const SPEAKING: SpeakingItem[] = [
     note: 'Keynote blending Universal Design for Learning and human-centered design — bringing the NETP pillars of Access, Design, and Use to life so districts build systems that actually work for the humans in them.',
   },
   {
-    title: 'AI vs. Hackers: K12 Defense Against Phishing Attacks',
+    title: 'Achieving Statewide AI Leadership',
     venue: 'CoSN 2026 Annual Conference',
     year: '2026',
     kind: 'Session',
-    note: 'Using AI to strengthen K12 cyber defenses against phishing and social-engineering attacks.',
+    note: 'With Arizona AI Alliance colleagues: how a grassroots coalition became statewide influence — the only state with official AI guidance delivered by a non-governmental entity — now reaching 14+ education organizations through guidance, PD, summits, and newsletters, with a deliberate focus on rural schools.',
   },
   {
     title: 'Cybersecurity for K12 School Districts',
