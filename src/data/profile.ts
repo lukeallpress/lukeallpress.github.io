@@ -57,6 +57,14 @@ export const EXPERIENCE: ExperienceItem[] = [
       'Built administrative systems and supported district technology operations and leadership development.',
   },
   {
+    org: 'Agua Fria Union High School District',
+    role: 'Site & District DEI Lead',
+    start: '2020',
+    end: '2024',
+    summary:
+      'Led diversity, equity, and inclusion work at the site and district level — facilitating article discussions and building strategic plans to support the district’s diverse students and teachers.',
+  },
+  {
     org: 'Agua Fria High School',
     role: 'Interventionist',
     start: 'Jul 2018',
