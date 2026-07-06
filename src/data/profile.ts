@@ -120,13 +120,35 @@ export type SpeakingItem = {
   verify?: boolean;
 };
 
+// Ordered most-recent first.
 export const SPEAKING: SpeakingItem[] = [
   {
-    title: 'Human-Centered Design for Education',
-    venue: 'AzTEA CI&IT Symposium',
-    year: 'Apr 2025',
-    kind: 'Keynote',
-    note: 'Keynote blending Universal Design for Learning and human-centered design — bringing the NETP pillars of Access, Design, and Use to life so districts build systems that actually work for the humans in them.',
+    title: 'Becoming a Builder in the Age of AI',
+    venue: 'AZ CSTA',
+    year: 'Jul 2026',
+    kind: 'Session',
+    note: 'The three kinds of software “builders” emerging inside a district in the AI era — pre-AI, alongside-AI, and AI-only — and how we scaffold PD and development infrastructure so any staffer can build tools safely. Wins, cautionary tales, and open-source (Google Apps Script) demos.',
+  },
+  {
+    title: '2026 Arizona AI Guidance — State Launch Webinar',
+    venue: 'AZ AI Alliance',
+    year: 'Jun 2026',
+    kind: 'Webinar',
+    note: 'Featured speaker for the public release of the updated statewide generative-AI guidance for Arizona schools.',
+  },
+  {
+    title: 'Vibe Coding for Educators',
+    venue: 'AzTEA (ISTE / CoSN Arizona)',
+    year: 'May 2026',
+    kind: 'Workshop',
+    note: 'Hands-on session on building dashboards, workflows, and tools with AI — safely.',
+  },
+  {
+    title: 'Building with Agentic AI',
+    venue: 'AzTEA CIO/CTO Meetup',
+    year: 'May 2026',
+    kind: 'Session',
+    note: 'District web-app features, an MCP server for safe agentic tasks, and self-hosted open-source LLMs.',
   },
   {
     title: 'Achieving Statewide AI Leadership',
@@ -136,33 +158,19 @@ export const SPEAKING: SpeakingItem[] = [
     note: 'With Arizona AI Alliance colleagues: how a grassroots coalition became statewide influence — the only state with official AI guidance delivered by a non-governmental entity — now reaching 14+ education organizations through guidance, PD, summits, and newsletters, with a deliberate focus on rural schools.',
   },
   {
+    title: 'Human-Centered Design for Education',
+    venue: 'AzTEA CI&IT Symposium',
+    year: 'Apr 2025',
+    kind: 'Keynote',
+    note: 'Keynote blending Universal Design for Learning and human-centered design — bringing the NETP pillars of Access, Design, and Use to life so districts build systems that actually work for the humans in them.',
+  },
+  {
     title: 'Cybersecurity for K12 School Districts',
     venue: 'CoSN 2025 Annual Conference',
     year: '2025',
     kind: 'Session',
     note: 'Practical cybersecurity strategies for protecting district systems and student data.',
     verify: true, // VERIFY: confirm the exact 2025 CoSN session title
-  },
-  {
-    title: '2026 Arizona AI Guidance — State Launch Webinar',
-    venue: 'AZ AI Alliance',
-    year: '2026',
-    kind: 'Webinar',
-    note: 'Featured speaker for the public release of the updated statewide generative-AI guidance for Arizona schools.',
-  },
-  {
-    title: 'Vibe Coding for Educators',
-    venue: 'AzTEA (ISTE / CoSN Arizona)',
-    year: '2026',
-    kind: 'Workshop',
-    note: 'Hands-on session on building dashboards, workflows, and tools with AI — safely.',
-  },
-  {
-    title: 'Building with Agentic AI',
-    venue: 'AzTEA CIO/CTO Meetup',
-    year: '2026',
-    kind: 'Session',
-    note: 'District web-app features, an MCP server for safe agentic tasks, and self-hosted open-source LLMs.',
   },
   {
     title: 'AI Implementation in K12',
