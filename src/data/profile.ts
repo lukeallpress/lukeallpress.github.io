@@ -173,6 +173,13 @@ export const SPEAKING: SpeakingItem[] = [
     verify: true, // VERIFY: confirm the exact 2025 CoSN session title
   },
   {
+    title: 'Learning Futures Tech & Media Meeting',
+    venue: 'The Learning Counsel — Phoenix, AZ',
+    year: 'Feb 2025',
+    kind: 'Panel',
+    note: 'Panelist at The Learning Counsel’s regional executive discussion for Arizona district leaders — edtech trends, AI, and workflow, alongside area superintendents and academic leaders.',
+  },
+  {
     title: 'AI Implementation in K12',
     venue: 'Arizona CIO/CTO Summit',
     year: '2024',
