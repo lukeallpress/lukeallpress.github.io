@@ -16,9 +16,9 @@ Rather than one more tool to log into, the Hub brings the daily essentials into 
 
 - **Intervention** — track and coordinate student interventions: who needs support, what's being tried, and whether it's working, so MTSS/RTI is a shared, visible practice instead of scattered spreadsheets.
 - **Attendance** — surface attendance and tardy patterns early, so staff can act before small problems become big ones.
-- **Coaches Corner** — a dedicated space for coaches to organize their work and support the staff and students they serve.
+- **Coaches Corner** — one place for athletic coaches to monitor their athletes' grades and eligibility at a glance.
 - **Teacher Dash** — a personalized dashboard that pulls each teacher's most-used data and tools into one clean view.
 
-Building it in-house means it keeps evolving with the district's real needs, stays inside our own data boundaries, and turns "can you build a tool that does X?" into a yes. It's the centerpiece of the in-house work recognized with CoSN's 2025 District Team Leadership Award.
+Building it in-house means it keeps evolving with the district's real needs, stays inside our own data boundaries, and turns "can you build a tool that does X?" into a yes.
 
 <!-- Live demo is a safe, demo-mode view of the real production app used across the district. -->
