@@ -15,6 +15,9 @@ pnpm-debug.log*
 # working notes / content briefs — keep out of the public repo
 chatgpt output.md
 gemini output.md
+# private working notes for AI/human collaborators (candid; never publish)
+NOTES.local.md
+*.local.md
 
 # macOS
 .DS_Store
