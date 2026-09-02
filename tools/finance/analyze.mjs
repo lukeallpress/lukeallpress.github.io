@@ -339,7 +339,8 @@ export function netWorthSeries(transactions, config, months, asOf) {
     });
   }
 
-  return { series: out, trustedFrom: trustBoundary(months, reconstructable, perAccount) };
+  const trust = trustBoundary(months, reconstructable, perAccount);
+  return { series: out, trustedFrom: trust.from, trustBlame: trust.blame };
 }
 
 /**
@@ -357,17 +358,21 @@ function trustBoundary(months, accounts, perAccount) {
   const ASSET_TOLERANCE = -2500;   // a checking account can be overdrawn
 
   let boundary = 0;
+  let blame = null;
   for (let i = 0; i < months.length; i++) {
-    let ok = true;
+    let bad = null;
     for (const a of accounts) {
       const v = perAccount.get(a.name).get(months[i]);
       if (v === undefined) continue;
-      if (a.class === 'liability' && v > CREDIT_TOLERANCE) { ok = false; break; }
-      if (a.class === 'asset' && v < ASSET_TOLERANCE) { ok = false; break; }
+      if (a.class === 'liability' && v > CREDIT_TOLERANCE) { bad = { a, v }; break; }
+      if (a.class === 'asset' && v < ASSET_TOLERANCE) { bad = { a, v }; break; }
     }
-    if (!ok) boundary = i + 1;
+    if (bad) { boundary = i + 1; blame = { month: months[i], account: bad.a.name, value: round(bad.v) }; }
   }
-  return months[Math.min(boundary, months.length - 1)];
+  return {
+    from: months[Math.min(boundary, months.length - 1)],
+    blame,
+  };
 }
 
 // ── Mortgage ────────────────────────────────────────────────────────────────

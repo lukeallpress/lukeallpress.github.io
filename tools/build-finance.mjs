@@ -12,8 +12,8 @@ import { gzipSync } from 'node:zlib';
 import { createInterface } from 'node:readline';
 import path from 'node:path';
 
-import { loadTransactions, FLOW } from './finance/parse.mjs';
-import { loadMint } from './finance/mint.mjs';
+import { FLOW } from './finance/parse.mjs';
+import { loadLedger } from './finance/ledger.mjs';
 import { paycheckModel } from './finance/paycheck.mjs';
 import {
   monthOf, topCat, monthRange, monthlySeries, categoryRollup, merchantRollup,
@@ -28,28 +28,41 @@ const OUT_DIR = path.join(ROOT, 'public', 'finances');
 const OUT_FILE = path.join(OUT_DIR, 'data.enc.json');
 
 const config = JSON.parse(readFileSync(path.join(SRC, 'config.json'), 'utf8'));
-const csvPath = path.join(SRC, 'transactions.csv');
-if (!existsSync(csvPath)) {
-  console.error(`\n  Missing ${csvPath}\n  Drop the Simplifi export there and re-run.\n`);
+const statsPath = path.join(SRC, 'ledger.stats.json');
+const ledgerStats = existsSync(statsPath)
+  ? JSON.parse(readFileSync(statsPath, 'utf8')) : null;
+const ledgerPath = path.join(SRC, 'ledger.jsonl');
+
+// The dashboard is built from the canonical ledger, never from the raw exports
+// — those are inputs to `npm run finance:import`, which is where deduplication
+// and identity live. Building from the store means the numbers cannot change
+// just because a different set of CSVs happens to be sitting in the folder.
+const store = loadLedger(ledgerPath);
+if (!store.size) {
+  console.error(`\n  Ledger is empty: ${ledgerPath}`);
+  console.error('  Run `npm run finance:import` first.\n');
   process.exit(1);
 }
 
-const { transactions: simplifi } = loadTransactions(csvPath, config);
+const oneTimeRules = (config.oneTimeEvents ?? []).map((r) => ({
+  ...r, re: new RegExp(r.match, 'i'),
+}));
 
-// Stitch the two exports at the seam. See tools/finance/mint.mjs for why this
-// is a cut rather than a merge.
-const seam = config.sources?.seam;
-const mintPath = path.join(SRC, config.sources?.mint ?? '');
-const mint = seam && existsSync(mintPath) ? loadMint(mintPath, config, seam) : [];
-const transactions = [...mint, ...simplifi.filter((t) => !seam || t.date > seam)]
+const transactions = [...store.values()]
+  .map((t) => {
+    const hit = oneTimeRules.find(
+      (r) => r.re.test(t.rawPayee ?? t.payee) && (!r.date || r.date === t.date),
+    );
+    return hit
+      ? { ...t, oneTime: true, eventLabel: hit.label, eventNote: hit.note ?? null }
+      : t;
+  })
   .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-const sourceSummary = {
-  mint: mint.length,
-  simplifi: transactions.length - mint.length,
-  simplifiDropped: simplifi.length - (transactions.length - mint.length),
-  seam,
-};
+const sourceCounts = {};
+for (const t of transactions) sourceCounts[t.source] = (sourceCounts[t.source] ?? 0) + 1;
+const seam = config.sources?.seam;
+const sourceSummary = { ...sourceCounts, seam };
 
 const asOf = config.asOf;
 const firstMonth = monthOf(transactions[0].date);
@@ -67,7 +80,7 @@ const cats12 = categoryRollup(transactions, t12);
 const catsAll = categoryRollup(transactions, completeMonths);
 const merchants12 = merchantRollup(transactions, t12);
 const recurring = detectRecurring(transactions, asOf);
-const { series: netWorth, trustedFrom } = netWorthSeries(transactions, config, months, asOf);
+const { series: netWorth, trustedFrom, trustBlame } = netWorthSeries(transactions, config, months, asOf);
 const amort = amortisation(config.mortgage);
 
 // Current-month spend per category, for budget rings.
@@ -265,37 +278,46 @@ if (trustedFrom !== months[0]) {
   });
 }
 
-// 6. Transfer leakage in the Mint years.
-// Mint categorised card payments and inter-account moves inconsistently, so
-// some of them land as income and spending rather than as transfers. That
-// inflates both sides roughly equally, leaving the net about right and the
-// levels too high. Detect it by comparing each year's income to its payroll.
+// 6. Duplicate rows in the source exports.
+// Mint recorded the same deposit twice — once as "AGUA FRIA UNION  PAYROLL"
+// and once as "ORIG CO NAME:AGUA FRIA UNION  CO" — which inflated income and
+// spending across the Mint years. These are collapsed at import.
+if (ledgerStats?.duplicatesSuppressed) {
+  dq.push({
+    severity: 'good',
+    title: `${ledgerStats.duplicatesSuppressed.toLocaleString()} duplicate rows removed from the source exports`,
+    detail: 'Mint stored many transactions twice, once per bank feed, worded differently each '
+      + 'time — most visibly every Agua Fria paycheque. Left in, they inflated reported income '
+      + 'and spending through the Mint years without changing the net. They are collapsed when '
+      + 'an export is imported, not when the dashboard is built, so the correction is permanent '
+      + `and does not have to be re-derived. Last import ${ledgerStats.importedAt}.`,
+  });
+}
+
+// 6b. Whatever inflation survived the deduplication.
 {
   const yearIncome = new Map();
   const yearPayroll = new Map();
   for (const t of transactions) {
     const y = t.date.slice(0, 4);
     if (t.flow === FLOW.INCOME) yearIncome.set(y, (yearIncome.get(y) ?? 0) + t.amount);
-    if (/payroll/i.test(t.rawPayee)) yearPayroll.set(y, (yearPayroll.get(y) ?? 0) + t.amount);
+    if (/payroll/i.test(t.rawPayee ?? '')) yearPayroll.set(y, (yearPayroll.get(y) ?? 0) + t.amount);
   }
   const inflated = [...yearIncome.entries()]
     .filter(([y, inc]) => {
-      const pay = yearPayroll.get(y) ?? 0;
-      return pay > 20000 && inc > pay * 1.6 && y < seam.slice(0, 4);
+      const p2 = yearPayroll.get(y) ?? 0;
+      return p2 > 20000 && inc > p2 * 1.75 && y < seam.slice(0, 4);
     })
-    .map(([y, inc]) => ({ year: y, income: round(inc), payroll: round(yearPayroll.get(y)) }));
+    .map(([y]) => y);
 
   if (inflated.length > 2) {
     dq.push({
       severity: 'warning',
-      title: `Spending and income levels look inflated before ${seam.slice(0, 4)}`,
-      detail: `In ${inflated.length} of the Mint years — ${inflated.map((i) => i.year).join(', ')} — `
-        + 'recorded income runs well above actual payroll, which happens when card payments and '
-        + 'moves between your own accounts get counted as income on one side and spending on the '
-        + 'other. It inflates both halves by about the same amount, so year-to-year *net* is '
-        + 'roughly right while the levels are too high. Simplifi flags both legs of a transfer, '
-        + `so anything after ${seam} is clean. Compare across the seam with that in mind.`,
-      years: inflated,
+      title: `Income still looks high against payroll in ${inflated.join(', ')}`,
+      detail: 'Deduplication fixed most of this, but these years still record more income than '
+        + 'payroll plausibly explains. The usual remainder is money moved between your own '
+        + 'accounts that Mint filed as income on one side and spending on the other, which '
+        + 'inflates both halves equally and leaves the net right.',
     });
   }
 }
@@ -388,6 +410,7 @@ const payload = {
     t12,
     trustedFrom,
     sources: sourceSummary,
+    ledgerStats,
     trustedMonths: months.slice(months.indexOf(trustedFrom)),
     household: config.household,
   },
@@ -519,9 +542,8 @@ console.log(`
   Finance payload built
   ─────────────────────────────────────────────
   transactions   ${payload.meta.txCount.toLocaleString()}  (${payload.meta.firstDate} → ${payload.meta.lastDate})
-  sources        Mint ${sourceSummary.mint.toLocaleString()} → ${seam}, then Simplifi ${sourceSummary.simplifi.toLocaleString()}
-                 (${sourceSummary.simplifiDropped.toLocaleString()} Simplifi rows before the seam superseded by Mint)
-  trusted from   ${trustedFrom}
+  sources        ${Object.entries(sourceCounts).map(([k, v]) => `${k} ${v.toLocaleString()}`).join(' · ')}  (seam ${config.sources?.seam})
+  trusted from   ${trustedFrom}${trustBlame ? `  (limited by ${trustBlame.account} at $${trustBlame.value.toLocaleString()} in ${trustBlame.month})` : ''}
   months         ${months.length}
   categories     ${cats12.length} active in the last 12 months
   recurring      ${recurring.length} detected

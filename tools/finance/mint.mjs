@@ -87,7 +87,12 @@ export function loadMint(csvPath, config, until) {
 
     const account = ACCOUNT_MAP[r[idx['Account Name']].trim()]
       ?? r[idx['Account Name']].trim();
-    const rawPayee = (r[idx.Description] || r[idx['Original Description']] || '').trim();
+    // Mint truncates `Description` to about fifteen characters — "Agua Fria
+    // Union" and "Orig Name Agua" are the same deposit — while
+    // `Original Description` carries the full bank text. Identity has to be
+    // decided on the full text; the short one is only good enough to display.
+    const fullPayee = (r[idx['Original Description']] || r[idx.Description] || '').trim();
+    const shortPayee = (r[idx.Description] || fullPayee).trim();
 
     // Mint stores magnitude in Amount and direction in Transaction Type.
     const magnitude = Number((r[idx.Amount] ?? '0').replace(/[$,\s]/g, ''));
@@ -97,8 +102,8 @@ export function loadMint(csvPath, config, until) {
     const tx = {
       date,
       account,
-      payee: cleanPayee(rawPayee),
-      rawPayee,
+      payee: cleanPayee(shortPayee.length > 6 ? shortPayee : fullPayee),
+      rawPayee: fullPayee,
       category: CATEGORY_MAP[rawCategory] ?? rawCategory ?? 'Uncategorized',
       recategorised: null,
       excluded: rawCategory === 'Transfer' || rawCategory === 'Hide',

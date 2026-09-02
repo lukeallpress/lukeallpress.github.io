@@ -194,6 +194,7 @@ export function loadTransactions(csvPath, config) {
       recategorised,
       excluded: (r[idx.Exclusion] ?? '').trim() === 'yes',
       amount: Number((r[idx.Amount] ?? '0').replace(/[$,\s]/g, '')),
+      source: 'simplifi',
     };
     if (!Number.isFinite(tx.amount)) continue;
     tx.merchant = merchantKey(tx.payee);
