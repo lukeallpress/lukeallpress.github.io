@@ -175,6 +175,9 @@ An unlisted, passphrase-gated household finance dashboard lives at `/finances`. 
 - **No identifying strings in source.** Addresses, account names and figures all
   travel inside the encrypted payload. Keep it that way when editing the views.
 - Rebuild with `npm run finance` (prompts for the passphrase), then commit the blob.
+- The tax/withholding projection is **arithmetic over stated assumptions, not advice**.
+  Every assumption is rendered on the page with a dotted underline and lives in
+  `config.json` → `taxAssumptions`. Keep it that way.
 - Full documentation: `tools/finance/README.md`.
 
 ---
@@ -193,6 +196,9 @@ Search the repo for `VERIFY` and `TODO`. Currently outstanding:
 - **Finance dashboard:** the $60,000 MidFirst wire of 2026-09-01 has no matching account
   on the balance sheet; the Simplifi payroll feed has gaps from mid-2025; HSA Checking and
   Barclays Savings have stale connections. All three are surfaced on the dashboard itself.
+- **Finance dashboard — needs Luke's confirmation:** number of qualifying children for the
+  child tax credit (assumed 3, from the 529s); cost basis of the July 2026 Wealthfront sale
+  (assumed 35% long-term gain); payroll still shows the old address on both receipts.
 
 ## Notable history
 

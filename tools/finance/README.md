@@ -52,6 +52,7 @@ is no re-key step, the whole payload is simply re-encrypted.
 | Simplifi export | 28 Feb 2024 → today | Everything, including balance reconstruction |
 | `config.json` | current | Balances, mortgage, house projects, budgets |
 | Closing Disclosure | Jul 2026 | Mortgage terms, buydown, escrow — exact |
+| Direct-deposit receipts | Aug 2026 | Gross, every deduction, employer contributions — exact |
 
 The two exports overlap from Jan 2020, but Simplifi's rows over that window are a
 partial backfill running 20–25% short of Mint's month by month. Rather than merge
@@ -74,6 +75,20 @@ use the full fourteen years.
 This is the general principle in the pipeline: where the data cannot support a
 number, the dashboard says so on the front page rather than showing it anyway.
 
+## The paycheck model
+
+`paycheck.mjs` exists because the bank ledger only ever sees *net* pay. Measured on
+transfers alone the household looks like it saves about 26% of take-home; counting
+the ASRS pension, both 403(b)s, the HSA and the district's pension match — none of
+which touch a visible account — it saves about 33% of gross.
+
+The same module projects federal and Arizona liability against what is actually
+being withheld. That projection is arithmetic over stated assumptions, not tax
+advice: the standard deduction, the bracket table, the number of qualifying
+children and the cost basis of the July 2026 Wealthfront sale are all guesses, and
+every one of them is rendered on the Paycheck page with a dotted underline so it
+can be checked or overridden in `config.json` → `taxAssumptions`.
+
 ## Files
 
 ```
@@ -81,6 +96,7 @@ tools/build-finance.mjs      orchestration: load → analyse → encrypt → wri
 tools/finance/parse.mjs      Simplifi reader, payee cleanup, flow classification
 tools/finance/mint.mjs       Mint reader, taxonomy + account-name reconciliation
 tools/finance/analyze.mjs    aggregates, recurring detection, reconstruction, amortisation
+tools/finance/paycheck.mjs   gross-to-net model, true savings rate, withholding projection
 tools/finance/crypt.mjs      PBKDF2 + AES-GCM envelope
 src/pages/finances.astro     lock screen, app shell, design tokens
 src/scripts/finance/vault.js decrypt + gunzip + ledger expansion

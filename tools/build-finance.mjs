@@ -14,6 +14,7 @@ import path from 'node:path';
 
 import { loadTransactions, FLOW } from './finance/parse.mjs';
 import { loadMint } from './finance/mint.mjs';
+import { paycheckModel } from './finance/paycheck.mjs';
 import {
   monthOf, topCat, monthRange, monthlySeries, categoryRollup, merchantRollup,
   detectRecurring, netWorthSeries, amortisation, budgetVsActual, anomalies,
@@ -117,10 +118,8 @@ for (const t of payroll) {
 const payroll12 = payroll.filter((t) => t12.includes(monthOf(t.date)));
 const payrollMonthly = round(payroll12.reduce((s, t) => s + t.amount, 0) / 12);
 
-const statedMonthlyNet = round(
-  config.income.earners.reduce(
-    (s, e) => s + e.netPerPaycheck * (e.frequency === 'biweekly' ? 26 : 24), 0) / 12,
-);
+const pay = paycheckModel(config);
+const statedMonthlyNet = pay.household.monthlyNet;
 
 // ── The house: one-time spend since closing vs the ordinary baseline ────────
 
@@ -274,7 +273,34 @@ if (trustedFrom !== months[0]) {
   }
 }
 
-// 7. Escrow built on the pre-sale tax assessment.
+// 7. Withholding against a rough projection of what will actually be owed.
+if (pay.tax && Math.abs(pay.tax.totalGap) > 1500) {
+  const short = pay.tax.totalGap > 0;
+  dq.push({
+    severity: short ? 'serious' : 'warning',
+    title: short
+      ? `Tax withholding looks about $${Math.round(pay.tax.totalGap).toLocaleString()} short for ${pay.tax.assumptions.year}`
+      : `Tax withholding looks about $${Math.abs(Math.round(pay.tax.totalGap)).toLocaleString()} more than needed`,
+    detail: 'Olivia\'s receipt withholds no federal tax at all — state and FICA only — so the '
+      + `household\'s entire federal withholding is Luke\'s $${Math.round(pay.tax.federalWithheld).toLocaleString()} a year. `
+      + `Against roughly $${Math.round(pay.tax.federalOnWages).toLocaleString()} of projected federal tax on wages `
+      + `(after an assumed ${pay.tax.assumptions.dependentChildren}-child credit), plus about `
+      + `$${Math.round(pay.tax.federalOnGains).toLocaleString()} on the assumed gain from the July Wealthfront sale. `
+      + 'Every input is an assumption and shown on the Paycheck page — this is arithmetic, not '
+      + 'tax advice. Worth putting in front of whoever files the return.',
+  });
+}
+
+// 8. Payroll still has the old address.
+if (config.income.payrollAddressStale) {
+  dq.push({
+    severity: 'warning',
+    title: 'Payroll still has the old address',
+    detail: `${config.income.payrollAddressNote} Worth fixing before W-2s go out in January.`,
+  });
+}
+
+// 9. Escrow built on the pre-sale tax assessment.
 if (escrowGap > 40) {
   dq.push({
     severity: 'serious',
@@ -350,6 +376,14 @@ const payload = {
     avgIncome, avgExpense, avgSavings, avgExpense3,
     payrollMonthly, statedMonthlyNet,
     savingsRate: round((avgSavings / Math.max(1, statedMonthlyNet)) * 100, 1),
+    // The bank ledger only sees net pay, so transfers to Wealthfront are the
+    // small half of the saving. The pension, both 403(b)s, the HSA and the
+    // employer match never touch a visible account.
+    payrollSavingsMonthly: round(pay.household.trueSavingsAnnual / 12),
+    trueSavingsMonthly: round(avgSavings + pay.household.trueSavingsAnnual / 12),
+    trueSavingsRate: round(
+      ((avgSavings * 12 + pay.household.trueSavingsAnnual)
+        / Math.max(1, pay.household.annualGross)) * 100, 1),
     burnRate: avgExpense,
     runwayMonths: round(round(cashTotal + creditTotal) / Math.max(1, avgExpense), 1),
     housingRatio: round(
@@ -373,6 +407,7 @@ const payload = {
   soldHome: config.soldHome,
   taxReserve: config.taxReserve,
   income: config.income,
+  paycheck: pay,
   mortgage: {
     ...config.mortgage,
     currentBalance: mortgageBalance,
@@ -446,6 +481,9 @@ console.log(`
   categories     ${cats12.length} active in the last 12 months
   recurring      ${recurring.length} detected
   data flags     ${dq.length}
+  household      $${pay.household.annualGross.toLocaleString()} gross · $${pay.household.annualNet.toLocaleString()} net
+  true saving    $${pay.household.trueSavingsAnnual.toLocaleString()}/yr (${pay.household.trueSavingsRateOfGross}% of gross)
+  tax gap        $${pay.tax ? Math.round(pay.tax.totalGap).toLocaleString() : 'n/a'}
   json           ${kb(json.length)}
   gzipped        ${kb(gz.length)}
   encrypted      ${kb(JSON.stringify(enc).length)}   → public/finances/data.enc.json

@@ -181,9 +181,12 @@ function viewOverview() {
     }),
     statTile({
       label: 'Saved & invested',
-      value: `${money(H.avgSavings)}/mo`,
-      sub: `${pct(H.savingsRate)} of take-home`,
-      tone: H.savingsRate > 15 ? 'good' : null,
+      value: `${money(H.trueSavingsMonthly)}/mo`,
+      sub: `${pct(H.trueSavingsRate)} of gross · ${money(H.payrollSavingsMonthly)} of it never `
+        + 'touches the bank',
+      tone: H.trueSavingsRate > 15 ? 'good' : null,
+      note: 'Bank transfers to investments plus everything payroll takes first: the ASRS '
+        + 'pension, both 403(b)s, the HSA, and the district\'s pension match.',
     }),
     statTile({
       label: 'Housing cost',
@@ -307,6 +310,188 @@ function dataQualityPanel() {
   }
   return sec;
 }
+
+
+// ═══ VIEW: Paycheck ═════════════════════════════════════════════════════════
+
+function viewPaycheck() {
+  const root = document.createElement('div');
+  const { earners, household: hh, tax } = D.paycheck;
+
+  root.append(h(`<div class="view-intro">
+    <h2>Paycheck</h2>
+    <p>Both receipts from Agua Fria Union HSD, biweekly, ${hh.periods} periods a year.
+    This is the half of the picture the bank never sees: the pension, both 403(b)s and
+    the HSA all come out before the deposit lands.</p>
+  </div>`));
+
+  root.append(h(`<section class="stat-grid stat-grid--4">
+    <div class="stat"><div class="stat-label">Household gross</div>
+      <div class="stat-value">${money(hh.annualGross)}</div>
+      <div class="stat-sub">${money(hh.grossPerPeriod)} every two weeks</div></div>
+    <div class="stat"><div class="stat-label">Lands in the bank</div>
+      <div class="stat-value">${money(hh.annualNet)}</div>
+      <div class="stat-sub">${money(hh.netPerPeriod)} per period · ${money(hh.monthlyNet)}/mo</div></div>
+    <div class="stat stat--good"><div class="stat-label">Saved before you see it</div>
+      <div class="stat-value">${money(hh.trueSavingsAnnual)}</div>
+      <div class="stat-sub">${pct(hh.trueSavingsRateOfGross)} of gross — pension, 403(b)s, HSA, employer match</div></div>
+    <div class="stat"><div class="stat-label">Total compensation</div>
+      <div class="stat-value">${money(hh.totalComp)}</div>
+      <div class="stat-sub">Including ${money(hh.annualEmployerBenefits)} of employer-paid benefits</div></div>
+  </section>`));
+
+  // Where each gross dollar actually goes.
+  const slices = [
+    { name: 'Take-home', value: hh.annualNet, color: 's1' },
+    { name: 'Retirement (ASRS + 403(b))', value: hh.annualRetirement, color: 's3' },
+    { name: 'Tax & FICA', value: round0(hh.taxPerPeriod * hh.periods), color: 's2' },
+    { name: 'Insurance', value: round0(hh.insurancePerPeriod * hh.periods), color: 's4' },
+    { name: 'Dependent care', value: hh.annualDependentCare, color: 's5' },
+    { name: 'HSA', value: hh.annualHsa, color: 's6' },
+  ].filter((x) => x.value > 0);
+
+  const comp = h('<section class="two-col"></section>');
+  const dbox = h('<div class="donut-box"></div>');
+  donut(dbox, slices, { centerValue: compact(hh.annualGross), centerLabel: 'gross' });
+  const list = h('<div class="comp-list"></div>');
+  for (const x of slices) {
+    list.append(h(`<div class="comp-row">
+      <span class="legend-swatch c-${x.color}"></span>
+      <span class="comp-name">${esc(x.name)}</span>
+      <span class="comp-pct muted">${pct((x.value / hh.annualGross) * 100, 0)}</span>
+      <span class="comp-val">${money(x.value)}</span>
+    </div>`));
+  }
+  comp.append(dbox, list);
+  root.append(h('<h3 class="section-head">Where every gross dollar goes</h3>'));
+  root.append(comp);
+
+  // Line-by-line, per earner.
+  root.append(h('<h3 class="section-head">Line by line</h3>'));
+  for (const e of earners) {
+    const sec = h(`<section class="stub">
+      <div class="stub-head">
+        <div>
+          <h4>${esc(e.name)}</h4>
+          <div class="muted">${esc(e.title)} · receipt dated ${dateLabel(e.payDate)}</div>
+        </div>
+        <div class="stub-net">
+          <span class="muted">${money2(e.gross)} gross →</span>
+          <b>${money2(e.net)}</b>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Deduction</th><th>Type</th><th class="num">Per period</th>
+        <th class="num">Per year</th><th class="num">Of gross</th></tr></thead>
+        <tbody></tbody></table></div>
+    </section>`);
+    const tb = sec.querySelector('tbody');
+    const kindColor = {
+      retirement: 's3', hsa: 's6', dependentcare: 's5', tax: 's2', insurance: 's4',
+    };
+    const kindLabel = {
+      retirement: 'Retirement', hsa: 'HSA', dependentcare: 'Dependent care',
+      tax: 'Tax', insurance: 'Insurance',
+    };
+    for (const d of [...e.deductions].sort((a, b) => b.amount - a.amount)) {
+      const annual = d.annualCap ?? d.amount * e.periods;
+      tb.append(h(`<tr${d.amount === 0 ? ' class="row-zero"' : ''}>
+        <td><span class="cell-dot c-${kindColor[d.kind] ?? 'sn'}"></span>${esc(d.name)}
+          ${d.preTax ? '<span class="pill">pre-tax</span>' : ''}
+          ${d.amount === 0 ? '<span class="pill pill--warn">nothing withheld</span>' : ''}</td>
+        <td class="muted">${kindLabel[d.kind] ?? d.kind}</td>
+        <td class="num">${money2(d.amount)}</td>
+        <td class="num">${money(annual)}</td>
+        <td class="num muted">${pct((annual / (e.gross * e.periods)) * 100, 1)}</td>
+      </tr>`));
+    }
+    tb.append(h(`<tr class="tr-total"><td><b>Take-home</b></td><td></td>
+      <td class="num"><b>${money2(e.net)}</b></td>
+      <td class="num"><b>${money(e.annualNet)}</b></td>
+      <td class="num"><b>${pct((e.annualNet / e.annualGross) * 100, 0)}</b></td></tr>`));
+
+    const emp = h(`<details class="emp-details">
+      <summary>Employer also pays ${money2(e.employerPaidTotal)} a period
+        (${money(e.employerPaidTotal * e.periods)} a year) on top</summary>
+      <ul class="mini-list">${e.employerPaid.map((x) =>
+    `<li><span>${esc(x.name)}</span><b>${money2(x.amount)}</b></li>`).join('')}</ul>
+    </details>`);
+    sec.append(emp);
+    root.append(sec);
+  }
+
+  // Withholding projection.
+  if (tax) {
+    const a = tax.assumptions;
+    const short = tax.totalGap > 0;
+    root.append(h('<h3 class="section-head">Withholding, checked against a projection</h3>'));
+    root.append(h(`<div class="alert alert--${short ? 'serious' : 'sum'}">
+      <div class="alert-when">${a.year} estimate</div>
+      <div>
+        <h4>${short
+    ? `About ${money(tax.totalGap)} more may be owed than is being withheld`
+    : `Withholding is running about ${money(Math.abs(tax.totalGap))} ahead of the estimate`}</h4>
+        <p>Olivia's receipt withholds <b>no federal tax at all</b> — state and FICA only — so the
+        household's entire federal withholding is Luke's ${money(tax.federalWithheld)} a year.
+        This is arithmetic over the assumptions below, not tax advice; the numbers are laid out
+        so whoever files the return can check them.</p>
+      </div>
+    </div>`));
+
+    const work = h(`<div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Step</th><th class="num">Amount</th><th>Note</th></tr></thead>
+      <tbody></tbody></table></div>`);
+    const wb = work.querySelector('tbody');
+    const row = (label, val, note, cls = '') => wb.append(h(
+      `<tr class="${cls}"><td>${label}</td><td class="num">${money(val)}</td>
+       <td class="muted">${note}</td></tr>`));
+
+    row('Household gross', hh.annualGross, `${money(hh.grossPerPeriod)} × ${hh.periods} periods`);
+    row('Less pre-tax deductions', -hh.annualPreTax,
+      'Pension, traditional 403(b), HSA, dependent care, medical, dental, vision');
+    row('Federal wages', tax.federalWages, 'Roughly what shows in W-2 box 1');
+    row('Less standard deduction', -a.standardDeduction,
+      `${esc(a.filingStatus)} — <span class="est">estimated ${a.year} figure</span>`);
+    row('Taxable income', tax.taxableIncome, '', 'tr-rule');
+    for (const b of tax.bands) {
+      row(`&nbsp;&nbsp;at ${pct(b.rate * 100, 0)}`, b.tax, `on ${money(b.amount)}`);
+    }
+    row('Federal tax before credits', tax.grossFederalTax, '');
+    row('Less child tax credit', -tax.credits,
+      `<span class="est">assumes ${a.dependentChildren} qualifying children</span> at ${money(a.childTaxCredit)} each`);
+    row('Federal tax on wages', tax.federalOnWages, '', 'tr-rule');
+    row('Federal withheld', -tax.federalWithheld, 'Luke only — Olivia withholds nothing');
+    row('Gap on wages', tax.federalGapOnWages, '', 'tr-total');
+    row('Plus tax on the Wealthfront sale', tax.federalOnGains + tax.stateOnGains,
+      `<span class="est">assumes ${pct(a.capitalGainsAssumption.assumedGainShare * 100, 0)} of the `
+      + `${money(a.capitalGainsAssumption.proceeds)} withdrawal was long-term gain</span>`);
+    row('Arizona, net of withholding', tax.stateGap,
+      `${pct(a.azFlatRate * 100, 1)} flat — currently slightly over-withheld`);
+    row('Estimated shortfall', tax.totalGap, '', 'tr-total');
+    root.append(work);
+
+    root.append(h(`<div class="method">
+      <h4>What would move this number</h4>
+      <p><b>The cost basis of the Wealthfront sale.</b> ${money(a.capitalGainsAssumption.proceeds)}
+      came out in July 2026 and the basis was never recorded, so this assumes
+      ${pct(a.capitalGainsAssumption.assumedGainShare * 100, 0)} of it was long-term gain. The
+      1099-B or Wealthfront's realised-gains report replaces the guess with a fact, and it is the
+      single biggest lever here.</p>
+      <p><b>The number of qualifying children.</b> This assumes ${a.dependentChildren}, inferred
+      from the 529 accounts. Each one is worth about ${money(a.childTaxCredit)} off the bill.</p>
+      <p><b>${a.year} brackets and the standard deduction</b> are estimates; the final figures
+      shift the result by a few hundred dollars either way.</p>
+      <p>None of this accounts for itemising, the mortgage-interest deduction on a
+      ${money(D.mortgage.originalPrincipal)} loan at ${pct(D.mortgage.rate * 100, 3)} — which in a
+      first full year is real money and pushes in the opposite direction — or anything else
+      specific to your return.</p>
+    </div>`));
+  }
+
+  return root;
+}
+
+const round0 = (n) => Math.round(n);
 
 // ═══ VIEW: Cash flow ════════════════════════════════════════════════════════
 
@@ -1069,6 +1254,7 @@ function viewTransactions() {
 const VIEWS = {
   overview: { label: 'Overview', render: viewOverview },
   cashflow: { label: 'Cash flow', render: viewCashflow },
+  paycheck: { label: 'Paycheck', render: viewPaycheck },
   spending: { label: 'Spending', render: viewSpending },
   recurring: { label: 'Recurring', render: viewRecurring },
   accounts: { label: 'Balance sheet', render: viewAccounts },
