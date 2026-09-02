@@ -472,11 +472,8 @@ function viewPaycheck() {
 
     root.append(h(`<div class="method">
       <h4>What would move this number</h4>
-      <p><b>The cost basis of the Wealthfront sale.</b> ${money(a.capitalGainsAssumption.proceeds)}
-      came out in July 2026 and the basis was never recorded, so this assumes
-      ${pct(a.capitalGainsAssumption.assumedGainShare * 100, 0)} of it was long-term gain. The
-      1099-B or Wealthfront's realised-gains report replaces the guess with a fact, and it is the
-      single biggest lever here.</p>
+      <p><b>The cost basis of the Wealthfront sale.</b> ${esc(a.capitalGainsAssumption.method)}
+      ${esc(a.capitalGainsAssumption.note.replace(/^VERIFY\.\s*/, ''))}</p>
       <p><b>The number of qualifying children.</b> This assumes ${a.dependentChildren}, inferred
       from the 529 accounts. Each one is worth about ${money(a.childTaxCredit)} off the bill.</p>
       <p><b>${a.year} brackets and the standard deduction</b> are estimates; the final figures
@@ -881,6 +878,9 @@ function viewAccounts() {
           value: -D.mortgage.currentBalance,
           meta: `${pct(D.mortgage.rate * 100, 3)} fixed · 30 years`,
         },
+        ...(D.privateLoans ?? [])
+          .filter((l) => !l.repaidOn || l.repaidOn > D.meta.asOf)
+          .map((l) => ({ name: l.name, value: -l.amount, meta: `From ${l.lender}` })),
       ],
     },
   ];
@@ -1093,6 +1093,20 @@ function viewHouse() {
   ));
 
   // The transition ledger.
+  const repaid = (D.privateLoans ?? []).filter((l) => l.repaidOn && l.repaidOn <= D.meta.asOf);
+  if (repaid.length) {
+    root.append(h('<h3 class="section-head">Borrowed and repaid</h3>'));
+    for (const l of repaid) {
+      root.append(h(`<div class="alert alert--sum">
+        <div class="alert-when">${dateShort(l.borrowedOn)} → ${dateShort(l.repaidOn)}</div>
+        <div>
+          <h4>${esc(l.name)} — ${money(l.amount)}, cleared</h4>
+          <p>${esc(l.note)}</p>
+        </div>
+      </div>`));
+    }
+  }
+
   root.append(h('<h3 class="section-head">The move, in money</h3>'));
   const tl = h('<ol class="timeline"></ol>');
   for (const e of D.oneTimeEvents) {

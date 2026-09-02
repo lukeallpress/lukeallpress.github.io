@@ -315,6 +315,16 @@ export function netWorthSeries(transactions, config, months, asOf) {
     if (eom >= mort.firstPaymentDate) debt -= (mortAt.get(m) ?? mort.originalPrincipal);
     else if (eom >= mort.closedOn) debt -= mort.originalPrincipal;
 
+    // Debts that never pass through a tracked account are still debts. The
+    // family loan toward the down payment went straight to title, so nothing
+    // in the ledger marks it — but net worth while it was outstanding has to
+    // carry it, or those two months read better than they were.
+    for (const loan of config.privateLoans ?? []) {
+      if (eom >= loan.borrowedOn && (!loan.repaidOn || eom < loan.repaidOn)) {
+        debt -= loan.amount;
+      }
+    }
+
     const investments = investAt.get(m);
 
     out.push({

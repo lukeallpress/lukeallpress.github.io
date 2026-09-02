@@ -406,6 +406,7 @@ const payload = {
   realEstate: config.realEstate,
   soldHome: config.soldHome,
   taxReserve: config.taxReserve,
+  privateLoans: config.privateLoans ?? [],
   income: config.income,
   paycheck: pay,
   mortgage: {

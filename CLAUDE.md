@@ -196,9 +196,14 @@ Search the repo for `VERIFY` and `TODO`. Currently outstanding:
 - **Finance dashboard:** the $60,000 MidFirst wire of 2026-09-01 has no matching account
   on the balance sheet; the Simplifi payroll feed has gaps from mid-2025; HSA Checking and
   Barclays Savings have stale connections. All three are surfaced on the dashboard itself.
-- **Finance dashboard — needs Luke's confirmation:** number of qualifying children for the
-  child tax credit (assumed 3, from the 529s); cost basis of the July 2026 Wealthfront sale
-  (assumed 35% long-term gain); payroll still shows the old address on both receipts.
+- **Finance dashboard — needs Luke's confirmation:** the second $60,000-plus movement of
+  2026-09-01 (two separate $80,000 debits left Chase for Barclays; one is the Wealthfront
+  replenish, the other has no matching account on the balance sheet); the realised gain on the
+  July 2026 Wealthfront sale (currently estimated at 48% of proceeds from the contribution
+  ledger — the actual figure is in Wealthfront under Documents → Tax documents → Realized
+  gains and losses); payroll still shows the old address on both receipts.
+  Confirmed with Luke: 3 qualifying children; the $60,000 MidFirst wire of 2026-09-01 repaid a
+  family loan taken toward the down payment, now modelled as a liability for July–August.
 
 ## Notable history
 
