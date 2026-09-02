@@ -213,6 +213,19 @@ export function loadTransactions(csvPath, config) {
     out.push(tx);
   }
 
+  // Hand-entered rows for accounts whose feed is gone. Same shape as everything
+  // else, flagged so the UI can say where they came from.
+  for (const m of config.manualTransactions ?? []) {
+    out.push({
+      ...m,
+      rawPayee: m.payee,
+      recategorised: null,
+      excluded: m.flow === 'transfer',
+      merchant: merchantKey(m.payee),
+      source: 'manual',
+    });
+  }
+
   out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   return { transactions: out, accountNames, investmentNames };
 }

@@ -196,14 +196,17 @@ Search the repo for `VERIFY` and `TODO`. Currently outstanding:
 - **Finance dashboard:** the $60,000 MidFirst wire of 2026-09-01 has no matching account
   on the balance sheet; the Simplifi payroll feed has gaps from mid-2025; HSA Checking and
   Barclays Savings have stale connections. All three are surfaced on the dashboard itself.
-- **Finance dashboard — needs Luke's confirmation:** the second $60,000-plus movement of
-  2026-09-01 (two separate $80,000 debits left Chase for Barclays; one is the Wealthfront
-  replenish, the other has no matching account on the balance sheet); the realised gain on the
-  July 2026 Wealthfront sale (currently estimated at 48% of proceeds from the contribution
-  ledger — the actual figure is in Wealthfront under Documents → Tax documents → Realized
-  gains and losses); payroll still shows the old address on both receipts.
-  Confirmed with Luke: 3 qualifying children; the $60,000 MidFirst wire of 2026-09-01 repaid a
-  family loan taken toward the down payment, now modelled as a liability for July–August.
+- **Finance dashboard — needs Luke:** the realised gain on the July 2026 Wealthfront sale
+  (estimated at 48% of proceeds from the contribution ledger; the real figure is in Wealthfront
+  under Documents → Tax documents → Realized gains and losses, and on the 1099-B in February);
+  payroll still shows the old address on both direct-deposit receipts.
+- **Barclays Savings has no feed** — they stopped sharing with budgeting apps. Its balance and
+  recent rows are typed into `config.json` by hand (`manualUpdate`, `manualTransactions`) and
+  go stale; refresh them when rebuilding. Simplifi was carrying a five-month-old figure that
+  understated net worth by $66,262.
+- Confirmed with Luke: 3 qualifying children; the $60,000 MidFirst wire of 2026-09-01 repaid a
+  family loan taken toward the down payment, modelled as a liability for July–August; the second
+  $80,000 of 2026-09-01 went to Barclays Savings and is still on hold.
 
 ## Notable history
 

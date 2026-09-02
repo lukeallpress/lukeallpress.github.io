@@ -202,9 +202,13 @@ function viewOverview() {
     }),
     statTile({
       label: 'Cash runway',
-      value: `${H.runwayMonths} mo`,
-      sub: `${money(H.liquid)} liquid ÷ ${money(H.avgExpense)}/mo`,
-      tone: H.runwayMonths < 3 ? 'warn' : H.runwayMonths > 6 ? 'good' : null,
+      value: `${H.runwayMonthsAvailable} mo`,
+      sub: H.cashOnHold
+        ? `${money(H.cashAvailable)} reachable today · ${H.runwayMonths} mo once `
+          + `${money(H.cashOnHold)} clears its hold`
+        : `${money(H.liquid)} liquid ÷ ${money(H.avgExpense)}/mo`,
+      tone: H.runwayMonthsAvailable < 3 ? 'warn' : H.runwayMonthsAvailable > 6 ? 'good' : null,
+      note: 'Measured on cash you could spend this week, not the whole balance sheet.',
     }),
   );
   root.append(tiles);
@@ -854,8 +858,15 @@ function viewAccounts() {
   const groups = [
     {
       title: 'Cash and savings',
-      rows: D.accounts.filter((a) => a.class === 'asset')
-        .map((a) => ({ name: a.name, value: a.balance, meta: a.group })),
+      rows: D.accounts.filter((a) => a.class === 'asset').map((a) => ({
+        name: a.name,
+        value: a.balance,
+        meta: [
+          a.apy ? `${pct(a.apy * 100, 2)} APY` : a.group,
+          a.onHold ? `${money(a.onHold)} on hold` : null,
+          a.manualUpdate ? 'entered by hand' : null,
+        ].filter(Boolean).join(' · '),
+      })),
     },
     {
       title: 'Investments',
@@ -938,6 +949,14 @@ function viewAccounts() {
     </div>`));
   }
   comp.append(donutBox, list);
+  if (H.interestEarning?.length) {
+    const held = H.cashOnHold
+      ? ` ${money(H.cashOnHold)} of it is still on hold and not spendable today.` : '';
+    root.append(h(`<p class="lede">Cash is earning
+      ${money(H.annualInterest)} a year at current balances and rates —
+      ${H.interestEarning.map((i) => `${esc(i.name)} at ${pct(i.apy * 100, 2)}`).join(', ')}.${held}</p>`));
+  }
+
   root.append(h('<h3 class="section-head">Composition</h3>'));
   root.append(comp);
 

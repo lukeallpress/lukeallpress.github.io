@@ -85,6 +85,12 @@ const now = netWorth[netWorth.length - 1];
 const investTotal = config.investments.holdings.reduce((s, h) => s + h.balance, 0);
 const cashTotal = config.accounts
   .filter((a) => a.class === 'asset').reduce((s, a) => s + a.balance, 0);
+const cashOnHold = config.accounts.reduce((s, a) => s + (a.onHold ?? 0), 0);
+const cashAvailable = round(cashTotal - cashOnHold);
+const interestEarning = config.accounts
+  .filter((a) => a.apy > 0)
+  .map((a) => ({ name: a.name, balance: a.balance, apy: a.apy,
+    annualInterest: round(a.balance * a.apy), interestYtd: a.interestYtd ?? null }));
 const creditTotal = config.accounts
   .filter((a) => a.class === 'liability').reduce((s, a) => s + a.balance, 0);
 const mortgageBalance = amort.find((r) => r.month === curMonth)?.balance
@@ -207,9 +213,20 @@ if (uncatShare > 3) {
 }
 
 // 4. Accounts that have stopped reporting.
+// An account kept up by hand is not a broken feed — it is a chore with a date
+// on it. The two need different wording because they need different responses.
 const lastSeen = new Map();
 for (const t of transactions) lastSeen.set(t.account, t.date);
 for (const a of config.accounts) {
+  if (a.manualUpdate) {
+    const age = Math.round((toTime(asOf) - toTime(a.asOf ?? asOf)) / 86400000);
+    dq.push({
+      severity: age > 45 ? 'warning' : 'good',
+      title: `${a.name} is updated by hand — last checked ${age === 0 ? 'today' : `${age} days ago`}`,
+      detail: a.note ?? 'No automatic feed; the balance here is whatever was last typed in.',
+    });
+    continue;
+  }
   const seen = lastSeen.get(a.name);
   const days = seen ? (toTime(asOf) - toTime(seen)) / 86400000 : Infinity;
   if (days > 75 && Math.abs(a.balance) > 100) {
@@ -220,6 +237,16 @@ for (const a of config.accounts) {
         + 'come through the feed. Either the account is dormant or the connection is stale.',
     });
   }
+}
+
+// 4b. Money that is on the balance sheet but not actually spendable yet.
+const held = config.accounts.filter((a) => a.onHold > 0);
+for (const a of held) {
+  dq.push({
+    severity: 'good',
+    title: `$${a.onHold.toLocaleString()} of the ${a.name} balance is still on hold`,
+    detail: a.holdNote ?? 'Counts toward net worth but cannot be spent yet.',
+  });
 }
 
 // 5. How far back the reconstructed balance history can be trusted.
@@ -385,7 +412,13 @@ const payload = {
       ((avgSavings * 12 + pay.household.trueSavingsAnnual)
         / Math.max(1, pay.household.annualGross)) * 100, 1),
     burnRate: avgExpense,
+    cashOnHold: round(cashOnHold),
+    cashAvailable,
     runwayMonths: round(round(cashTotal + creditTotal) / Math.max(1, avgExpense), 1),
+    runwayMonthsAvailable: round(
+      round(cashAvailable + creditTotal) / Math.max(1, avgExpense), 1),
+    interestEarning,
+    annualInterest: round(interestEarning.reduce((s2, x) => s2 + x.annualInterest, 0)),
     housingRatio: round(
       ((config.mortgage.buydown.borrowerPI + config.mortgage.escrow.totalMonthly)
         / Math.max(1, statedMonthlyNet)) * 100, 1),

@@ -51,6 +51,7 @@ is no re-key step, the whole payload is simply re-encrypted.
 | Mint export | May 2012 → 27 Feb 2024 | Spending, income, categories, merchants |
 | Simplifi export | 28 Feb 2024 → today | Everything, including balance reconstruction |
 | `config.json` | current | Balances, mortgage, house projects, budgets |
+| Hand-entered rows | as needed | Accounts with no feed — see below |
 | Closing Disclosure | Jul 2026 | Mortgage terms, buydown, escrow — exact |
 | Direct-deposit receipts | Aug 2026 | Gross, every deduction, employer contributions — exact |
 
@@ -58,6 +59,20 @@ The two exports overlap from Jan 2020, but Simplifi's rows over that window are 
 partial backfill running 20–25% short of Mint's month by month. Rather than merge
 and deduplicate, the pipeline cuts at the seam: each source owns the period it was
 actually the live system.
+
+## Accounts with no feed
+
+Barclays stopped sharing with budgeting apps, so its balance is `manualUpdate: true`
+in `config.json` with an `asOf` date, and enough of its recent activity is listed
+under `manualTransactions` for the reconstruction to roll back correctly through the
+house purchase. The dashboard reports how long ago a hand-updated account was last
+checked rather than pretending the number is live.
+
+This matters more than it sounds: Simplifi was still carrying a five-month-old
+Barclays figure, which understated net worth by $66,262.
+
+`onHold` on an account marks money that counts toward net worth but cannot be spent
+yet, and the cash-runway figure is measured on what is actually reachable.
 
 ## Why balance history starts in 2024
 
