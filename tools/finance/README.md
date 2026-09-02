@@ -19,13 +19,17 @@ appear anywhere in this repo's source — they all travel inside the encrypted f
    npm run finance          # prompts for the passphrase
    ```
 
-4. Commit the encrypted output and push. The blob is gitignored on purpose — so a
-   stale or test-encrypted file can never be swept in by `git add -A` — which means
-   publishing it is always a deliberate `-f`:
+4. Commit the encrypted output and push:
 
    ```bash
-   git add -f public/finances/data.enc.json && git commit -m "Update finance data" && git push
+   git add public/finances/data.enc.json && git commit -m "Update finance data" && git push
    ```
+
+   `data.enc.json` is a **tracked** file and should stay one. Do not add it to
+   `.gitignore`: ignoring an already-tracked file does not untrack it, it only means
+   the next `git add -A` quietly stages its deletion. What stops a weak or throwaway
+   passphrase reaching the repo is the entropy check in `build-finance.mjs`, which
+   refuses to encrypt at all rather than producing a publishable file.
 
 Set `FINANCE_DEBUG=1` to also write `finance-private/payload.debug.json`, the
 cleartext payload, for inspecting what the browser will receive. It is gitignored.

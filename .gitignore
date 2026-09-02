@@ -35,7 +35,8 @@ NOTES.local.md
 # public/finances/data.enc.json goes to the public repo.
 finance-private/
 
-# The encrypted payload is generated locally by `npm run finance` and committed
-# deliberately (see tools/finance/README.md). It is force-added rather than
-# tracked automatically, so a stale or test-encrypted blob can never slip in.
-public/finances/data.enc.json
+# NOTE: public/finances/data.enc.json is deliberately NOT ignored. It is tracked,
+# and must stay tracked — gitignoring a tracked file does not untrack it, it just
+# means `git add -A` silently stages its deletion. The guard against publishing a
+# weak or test-encrypted blob is the passphrase entropy check in
+# tools/build-finance.mjs, not this file.
