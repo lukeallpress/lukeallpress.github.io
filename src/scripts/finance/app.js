@@ -132,6 +132,186 @@ const delta = (n, invert = false) => {
   return `<span class="delta delta--${cls}">${arrow} ${money(Math.abs(n))}</span>`;
 };
 
+
+// ═══ VIEW: Affordability ════════════════════════════════════════════════════
+
+function viewAffordability() {
+  const root = document.createElement('div');
+  const A = D.affordability;
+  const m = D.mortgage;
+  const now = A.scenarios[0];
+  const end = A.scenarios[A.scenarios.length - 1];
+
+  root.append(h(`<div class="view-intro">
+    <h2>Can we carry this house?</h2>
+    <p>Measured, not budgeted: what actually went out over the twelve months to
+    ${monthLong(D.meta.t12[11])}, with the old housing cost taken out and the new one
+    put in its place.</p>
+  </div>`));
+
+  // The verdict, stated plainly.
+  const short = now.surplus < 0;
+  root.append(h(`<section class="verdict verdict--${short ? 'short' : 'ok'}">
+    <div class="verdict-num">${money(Math.abs(now.surplus))}<span>/mo</span></div>
+    <div class="verdict-body">
+      <h3>${short ? 'short, at the current payment' : 'left over each month'}</h3>
+      <p>${short
+    ? `Take-home covers the mortgage and about ${money(A.baseline)} of everything else, `
+      + `but the two together come to ${money(A.baseline + now.housing)}. The shortfall grows to `
+      + `${money(Math.abs(end.surplus))}/mo once the buydown expires and escrow catches up.`
+    : 'Income covers the mortgage and current spending with room to spare.'}</p>
+    </div>
+  </section>`));
+
+  // What actually changed.
+  root.append(h(`<section class="stat-grid stat-grid--4">
+    <div class="stat"><div class="stat-label">Housing was</div>
+      <div class="stat-value">${money(A.oldHousingMonthly)}</div>
+      <div class="stat-sub">Old mortgage and HOA, averaged over the last year</div></div>
+    <div class="stat stat--warn"><div class="stat-label">Housing is now</div>
+      <div class="stat-value">${money(A.housingNow)}</div>
+      <div class="stat-sub">${delta(-A.housingIncrease)} a month, and nothing else changed</div></div>
+    <div class="stat"><div class="stat-label">Take-home</div>
+      <div class="stat-value">${money(A.takeHome)}</div>
+      <div class="stat-sub">Both cheques, ${money(D.paycheck.household.netPerPeriod, 2)} every two weeks</div></div>
+    <div class="stat stat--warn"><div class="stat-label">Actually spendable</div>
+      <div class="stat-value">${money(A.sustainableIncome)}</div>
+      <div class="stat-sub">After ${money(A.withholdingShortfall)}/mo of tax that is owed but not being withheld</div></div>
+  </section>`));
+
+  // The three scenarios.
+  root.append(h('<h3 class="section-head">How it changes</h3>'));
+  root.append(figure(
+    'Income against housing and everything else',
+    'Baseline spending is held flat across all three — this shows only what the housing '
+    + 'cost does on its own.',
+    (plot, leg) => {
+      stackedChart(plot, {
+        labels: A.scenarios.map((s) => s.label),
+        height: 240,
+        xEvery: 1,
+        series: [
+          { name: 'Housing', values: A.scenarios.map((s) => s.housing), color: 's2' },
+          { name: 'Everything else', values: A.scenarios.map((s) => s.baseline), color: 's4' },
+        ],
+        yFmt: compact,
+        tipFmt: money,
+      });
+      legend(leg, [
+        { name: 'Housing', color: 's2' },
+        { name: 'Everything else', color: 's4' },
+      ]);
+    },
+    () => chartTable(['', 'Housing', 'Everything else', 'Total out', 'Income', 'Surplus'],
+      A.scenarios.map((s) => [s.label, money(s.housing), money(s.baseline),
+        money(s.housing + s.baseline), money(s.income), money(s.surplus)])),
+  ));
+
+  const rows = h('<div class="table-wrap"><table class="data-table"><thead><tr><th>When</th>'
+    + '<th class="num">Housing</th><th class="num">Everything else</th><th class="num">Income</th>'
+    + '<th class="num">Left over</th><th>Why</th></tr></thead><tbody></tbody></table></div>');
+  const tb = rows.querySelector('tbody');
+  for (const s of A.scenarios) {
+    tb.append(h(`<tr>
+      <td><b>${esc(s.label)}</b></td>
+      <td class="num">${money(s.housing)}</td>
+      <td class="num">${money(s.baseline)}</td>
+      <td class="num">${money(s.income)}</td>
+      <td class="num ${s.surplus < 0 ? 'neg' : 'pos'}"><b>${money(s.surplus)}</b></td>
+      <td class="muted">${esc(s.note)}</td>
+    </tr>`));
+  }
+  root.append(rows);
+
+  // Closing the gap.
+  root.append(h('<h3 class="section-head">Closing the gap</h3>'));
+  root.append(h(`<p class="lede">The shortfall to plan for is
+    <b>${money(A.gap)}/mo</b> — the late-2027 figure, since both increases are already
+    scheduled. Ordered by how much each move is worth, ${A.coverable
+    ? `the first <b>${A.leversNeeded}</b> get there.`
+    : 'the whole list does not quite get there on its own.'}</p>`));
+
+  const levers = h('<div class="lever-list"></div>');
+  A.levers.forEach((l, i) => {
+    const within = i < A.leversNeeded;
+    levers.append(h(`
+      <div class="lever${within ? ' lever--needed' : ''}">
+        <div class="lever-amt">${money(l.monthly)}<span>/mo</span></div>
+        <div class="lever-body">
+          <div class="lever-name">${esc(l.name)}
+            ${l.from ? `<span class="muted">— ${money(l.from)} → ${money(l.to)}</span>` : ''}</div>
+          ${l.note ? `<p class="lever-note">${esc(l.note)}</p>` : ''}
+        </div>
+        <div class="lever-cum ${within ? 'pos' : 'muted'}">${money(l.cumulative)}<span>running</span></div>
+      </div>`));
+  });
+  root.append(levers);
+
+  // Recurring charges that could simply stop.
+  if (A.cuttable.length) {
+    root.append(h('<h3 class="section-head">Recurring charges you could stop</h3>'));
+    root.append(h(`<p class="lede">Fixed-price commitments only — utilities and insurance are
+      left out because they are not optional. Together these run
+      <b>${money(A.cuttableAnnual)} a year</b>, ${money(A.cuttableAnnual / 12)}/mo. Not a
+      recommendation to cancel all of them; a list of what is on the meter.</p>`));
+    const ct = h('<div class="table-wrap"><table class="data-table"><thead><tr>'
+      + '<th>Charge</th><th>Category</th><th>Cadence</th><th class="num">Each</th>'
+      + '<th class="num">Per month</th><th class="num">Per year</th><th>Last seen</th>'
+      + '</tr></thead><tbody></tbody></table></div>');
+    const cb = ct.querySelector('tbody');
+    for (const r of A.cuttable) {
+      cb.append(h(`<tr>
+        <td><span class="cell-dot c-${catColor(r.category)}"></span>${esc(r.label)}</td>
+        <td class="muted">${esc(r.category)}</td>
+        <td>${esc(r.cadence)}</td>
+        <td class="num">${money2(r.amount)}</td>
+        <td class="num">${money2(r.monthly)}</td>
+        <td class="num"><b>${money(r.annual)}</b></td>
+        <td class="muted">${dateLabel(r.last)}</td>
+      </tr>`));
+    }
+    root.append(ct);
+  }
+
+  // Where the baseline actually goes.
+  root.append(h('<h3 class="section-head">What the baseline is made of</h3>'));
+  root.append(figure(
+    `${money(A.baseline)}/mo of non-housing spending`,
+    'Shaded portion is what a household can realistically move on. Kids is almost all '
+    + 'school and childcare; utilities will rise rather than fall, given a bigger house '
+    + 'and a pool.',
+    (plot) => {
+      rankedBars(plot, A.categories.filter((c) => c.monthly >= 20).map((c) => ({
+        label: esc(c.name),
+        value: c.monthly,
+        color: catColor(c.name),
+        meta: c.flex > 0 ? `${Math.round(c.flex * 100)}% flexible` : 'fixed',
+      })), { fmt: (v) => `${money(v)}/mo` });
+    },
+    () => chartTable(['Category', 'Per month', 'Per year', 'Flexible'],
+      A.categories.map((c) => [c.name, money(c.monthly), money(c.monthly * 12),
+        c.flex > 0 ? `${Math.round(c.flex * 100)}%` : '—'])),
+  ));
+
+  root.append(h(`<div class="method">
+    <h4>What this does and does not assume</h4>
+    <p>The baseline is what was actually spent, not a budget. It excludes the old mortgage
+    and HOA, which the new payment replaces, and it excludes the one-time house-transition
+    money, which is on its own page.</p>
+    <p>Income is take-home <em>minus</em> the tax being owed but not withheld. That is
+    ${money(A.withholdingShortfall)}/mo of the gap, and it is the one line here that could be
+    fixed with paperwork rather than sacrifice — although fixing it lowers take-home, it does
+    not create money.</p>
+    <p>Utilities are held flat and probably should not be: this house is larger than the last
+    one and has a pool. Property tax is the estimate from the escrow analysis, not a bill.</p>
+    <p>Nothing here counts the ${money(D.headline.homeEquity)} of equity or the
+    ${money(D.headline.investTotal)} invested. Those make the household solvent; they do not
+    make the monthly arithmetic work.</p>
+  </div>`));
+
+  return root;
+}
+
 // ═══ VIEW: Overview ═════════════════════════════════════════════════════════
 
 function viewOverview() {
@@ -1285,6 +1465,7 @@ function viewTransactions() {
 // ═══ Shell ══════════════════════════════════════════════════════════════════
 
 const VIEWS = {
+  affordability: { label: 'Can we afford it?', render: viewAffordability },
   overview: { label: 'Overview', render: viewOverview },
   cashflow: { label: 'Cash flow', render: viewCashflow },
   paycheck: { label: 'Paycheck', render: viewPaycheck },
@@ -1295,7 +1476,7 @@ const VIEWS = {
   transactions: { label: 'Transactions', render: viewTransactions },
 };
 
-let currentView = 'overview';
+let currentView = 'affordability';
 
 function go(view, focus) {
   if (!VIEWS[view]) return;

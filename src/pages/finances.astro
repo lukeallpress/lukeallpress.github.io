@@ -501,6 +501,45 @@
 
       .rec-section { margin-bottom: 1rem; }
 
+      /* ═══ Affordability ════════════════════════════════════════════════ */
+      .verdict {
+        display: flex; align-items: center; gap: clamp(1rem, 3vw, 2rem); flex-wrap: wrap;
+        background: var(--surface); border: 1px solid var(--line);
+        border-left: 4px solid var(--good); border-radius: 14px;
+        padding: clamp(1.2rem, 3vw, 1.8rem); margin-bottom: 1.5rem; box-shadow: var(--shadow);
+      }
+      .verdict--short { border-left-color: var(--critical); }
+      .verdict-num {
+        font-family: var(--serif); font-size: clamp(2.4rem, 6vw, 3.4rem);
+        line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap;
+      }
+      .verdict--short .verdict-num { color: var(--neg); }
+      .verdict--ok .verdict-num { color: var(--pos); }
+      .verdict-num span { font-family: var(--sans); font-size: 0.32em; color: var(--ink-3); margin-left: 0.15em; }
+      .verdict-body { flex: 1; min-width: 16rem; }
+      .verdict-body h3 { font-size: 1.15rem; margin-bottom: 0.3rem; }
+      .verdict-body p { font-size: 0.88rem; color: var(--ink-2); max-width: 66ch; }
+
+      .lever-list { display: grid; gap: 0.4rem; margin-bottom: 1.75rem; }
+      .lever {
+        display: grid; grid-template-columns: 7.5rem 1fr 7.5rem; gap: 1rem; align-items: center;
+        background: var(--surface); border: 1px solid var(--line-2);
+        border-radius: var(--radius); padding: 0.7rem 0.95rem;
+      }
+      .lever--needed { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); background: var(--surface); }
+      .lever--needed .lever-amt { color: var(--pos); }
+      .lever-amt { font-family: var(--serif); font-size: 1.3rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .lever-amt span { font-family: var(--sans); font-size: 0.58rem; color: var(--ink-3); }
+      .lever-name { font-size: 0.9rem; font-weight: 540; }
+      .lever-name .muted { font-weight: 400; font-variant-numeric: tabular-nums; }
+      .lever-note { font-size: 0.79rem; color: var(--ink-3); margin-top: 0.15rem; max-width: 68ch; line-height: 1.5; }
+      .lever-cum { text-align: right; font-variant-numeric: tabular-nums; font-size: 0.95rem; font-weight: 560; white-space: nowrap; }
+      .lever-cum span { display: block; font-size: 0.63rem; font-weight: 400; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+      @media (max-width: 700px) {
+        .lever { grid-template-columns: 6rem 1fr; }
+        .lever-cum { display: none; }
+      }
+
       /* ═══ Paycheck ═════════════════════════════════════════════════════ */
       .stub { margin-bottom: 1.5rem; }
       .stub-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.6rem; }

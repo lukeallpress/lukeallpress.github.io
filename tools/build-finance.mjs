@@ -21,6 +21,8 @@ import {
   round, toTime, fromTime, median,
 } from './finance/analyze.mjs';
 import { encryptPayload, verifyPayload } from './finance/crypt.mjs';
+import { buildRunsheet } from './finance/runsheet.mjs';
+import { affordability } from './finance/affordability.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SRC = path.join(ROOT, 'finance-private');
@@ -486,6 +488,8 @@ const payload = {
   ledger: { dict, rows: ledger },
 };
 
+payload.affordability = affordability(config, payload, transactions, cats12);
+
 // ── Encrypt & write ─────────────────────────────────────────────────────────
 
 const passphrase = process.env.FINANCE_PASSPHRASE ?? await prompt();
@@ -531,6 +535,11 @@ if (!verified) {
 
 mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(OUT_FILE, JSON.stringify(enc));
+
+// The runsheet is regenerated every build so it cannot drift from the
+// dashboard. It stays in the private directory — it is plain text.
+const runsheetPath = path.join(SRC, 'RUNSHEET.md');
+writeFileSync(runsheetPath, buildRunsheet(payload));
 // The cleartext payload is a debugging aid, not an output. It lands in the
 // gitignored private directory and only when explicitly requested.
 if (process.env.FINANCE_DEBUG) {
@@ -554,7 +563,11 @@ console.log(`
   json           ${kb(json.length)}
   gzipped        ${kb(gz.length)}
   encrypted      ${kb(JSON.stringify(enc).length)}   → public/finances/data.enc.json
+  runsheet       finance-private/RUNSHEET.md
   verified       decrypts with the passphrase given (${verified.meta.txCount.toLocaleString()} rows read back)
+
+  affordability  $${payload.affordability.sustainableIncome.toLocaleString()} in · $${payload.affordability.housingNow.toLocaleString()} housing · $${payload.affordability.baseline.toLocaleString()} everything else
+                 surplus today $${payload.affordability.scenarios[0].surplus.toLocaleString()} · late 2027 $${payload.affordability.scenarios[2].surplus.toLocaleString()}
 
   net worth      $${payload.headline.netWorth.toLocaleString()}
   liquid         $${payload.headline.liquid.toLocaleString()}
