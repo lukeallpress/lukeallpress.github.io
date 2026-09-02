@@ -164,6 +164,21 @@ Coach (Prototype) · `5` District MCP Server · `6` Partnership Tracker · `7` S
 
 ---
 
+## Private finance dashboard (`/finances`)
+
+An unlisted, passphrase-gated household finance dashboard lives at `/finances`. It is
+**not** part of the site: no nav link, no sitemap entry, `noindex`, and no Base layout.
+
+- **Nothing private is ever committed.** `finance-private/` (raw exports, balances,
+  mortgage terms, cleartext payload) is gitignored. The only thing published is
+  `public/finances/data.enc.json` — one AES-256-GCM blob, decrypted in the browser.
+- **No identifying strings in source.** Addresses, account names and figures all
+  travel inside the encrypted payload. Keep it that way when editing the views.
+- Rebuild with `npm run finance` (prompts for the passphrase), then commit the blob.
+- Full documentation: `tools/finance/README.md`.
+
+---
+
 ## Open items / awaiting Luke
 
 Search the repo for `VERIFY` and `TODO`. Currently outstanding:
@@ -175,6 +190,9 @@ Search the repo for `VERIFY` and `TODO`. Currently outstanding:
 - **LinkedIn profile** updates were prepared but not yet applied (Featured, Website, Projects,
   role updates). Dates still needed for the TLE Cohort and Agentic Builders Committee entries.
 - Optional: professional headshot; possible AzTEA Fall Conference talks (unconfirmed).
+- **Finance dashboard:** the $60,000 MidFirst wire of 2026-09-01 has no matching account
+  on the balance sheet; the Simplifi payroll feed has gaps from mid-2025; HSA Checking and
+  Barclays Savings have stale connections. All three are surfaced on the dashboard itself.
 
 ## Notable history
 

@@ -1,0 +1,461 @@
+#!/usr/bin/env node
+/**
+ * Build the dashboard payload from the private Simplifi export + config,
+ * then encrypt it. Only the encrypted output is ever written into the repo.
+ *
+ *   node tools/build-finance.mjs                 # reads FINANCE_PASSPHRASE
+ *   FINANCE_PASSPHRASE='…' npm run finance
+ */
+
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
+import { createInterface } from 'node:readline';
+import path from 'node:path';
+
+import { loadTransactions, FLOW } from './finance/parse.mjs';
+import { loadMint } from './finance/mint.mjs';
+import {
+  monthOf, topCat, monthRange, monthlySeries, categoryRollup, merchantRollup,
+  detectRecurring, netWorthSeries, amortisation, budgetVsActual, anomalies,
+  round, toTime, fromTime, median,
+} from './finance/analyze.mjs';
+import { encryptPayload } from './finance/crypt.mjs';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+const SRC = path.join(ROOT, 'finance-private');
+const OUT_DIR = path.join(ROOT, 'public', 'finances');
+const OUT_FILE = path.join(OUT_DIR, 'data.enc.json');
+
+const config = JSON.parse(readFileSync(path.join(SRC, 'config.json'), 'utf8'));
+const csvPath = path.join(SRC, 'transactions.csv');
+if (!existsSync(csvPath)) {
+  console.error(`\n  Missing ${csvPath}\n  Drop the Simplifi export there and re-run.\n`);
+  process.exit(1);
+}
+
+const { transactions: simplifi } = loadTransactions(csvPath, config);
+
+// Stitch the two exports at the seam. See tools/finance/mint.mjs for why this
+// is a cut rather than a merge.
+const seam = config.sources?.seam;
+const mintPath = path.join(SRC, config.sources?.mint ?? '');
+const mint = seam && existsSync(mintPath) ? loadMint(mintPath, config, seam) : [];
+const transactions = [...mint, ...simplifi.filter((t) => !seam || t.date > seam)]
+  .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+const sourceSummary = {
+  mint: mint.length,
+  simplifi: transactions.length - mint.length,
+  simplifiDropped: simplifi.length - (transactions.length - mint.length),
+  seam,
+};
+
+const asOf = config.asOf;
+const firstMonth = monthOf(transactions[0].date);
+const lastMonth = monthOf(asOf);
+const months = monthRange(firstMonth, lastMonth);
+
+// Trailing windows. The last month is partial, so "trailing 12" ends with the
+// last *complete* month to keep averages honest.
+const completeMonths = months.slice(0, -1);
+const t12 = completeMonths.slice(-12);
+const t3 = completeMonths.slice(-3);
+
+const monthly = monthlySeries(transactions, months);
+const cats12 = categoryRollup(transactions, t12);
+const catsAll = categoryRollup(transactions, completeMonths);
+const merchants12 = merchantRollup(transactions, t12);
+const recurring = detectRecurring(transactions, asOf);
+const { series: netWorth, trustedFrom } = netWorthSeries(transactions, config, months, asOf);
+const amort = amortisation(config.mortgage);
+
+// Current-month spend per category, for budget rings.
+const curMonth = lastMonth;
+const curCats = new Map();
+for (const t of transactions) {
+  if (t.flow !== FLOW.EXPENSE || monthOf(t.date) !== curMonth) continue;
+  const k = topCat(t.category);
+  curCats.set(k, (curCats.get(k) ?? 0) + -t.amount);
+}
+
+// ── Headline numbers ────────────────────────────────────────────────────────
+
+const now = netWorth[netWorth.length - 1];
+const investTotal = config.investments.holdings.reduce((s, h) => s + h.balance, 0);
+const cashTotal = config.accounts
+  .filter((a) => a.class === 'asset').reduce((s, a) => s + a.balance, 0);
+const creditTotal = config.accounts
+  .filter((a) => a.class === 'liability').reduce((s, a) => s + a.balance, 0);
+const mortgageBalance = amort.find((r) => r.month === curMonth)?.balance
+  ?? config.mortgage.originalPrincipal;
+const propertyValue = config.realEstate[0].value;
+
+// Trailing averages run on the ordinary ledger only. The house transition is
+// real money but not a repeatable pattern, so it gets its own section rather
+// than being smeared across a 12-month average.
+const ordinary = transactions.filter((t) => !t.oneTime);
+const monthlyOrdinary = monthlySeries(ordinary, months);
+const ordT12 = monthlyOrdinary.filter((m) => t12.includes(m.month));
+const avgIncome = round(ordT12.reduce((s, m) => s + m.income, 0) / 12);
+const avgExpense = round(ordT12.reduce((s, m) => s + m.expense, 0) / 12);
+const avgSavings = round(ordT12.reduce((s, m) => s + m.savings, 0) / 12);
+const avgExpense3 = round(
+  monthlyOrdinary.filter((m) => t3.includes(m.month))
+    .reduce((s, m) => s + m.expense, 0) / 3,
+);
+
+// Payroll is the reliable income signal; the raw `income` flow also picks up
+// one-off inflows like the home-sale wire, which would flatter the average.
+const payroll = transactions.filter(
+  (t) => t.flow === FLOW.INCOME && /payroll/i.test(t.rawPayee),
+);
+const payrollByMonth = new Map(months.map((m) => [m, 0]));
+for (const t of payroll) {
+  const m = monthOf(t.date);
+  if (payrollByMonth.has(m)) payrollByMonth.set(m, payrollByMonth.get(m) + t.amount);
+}
+const payroll12 = payroll.filter((t) => t12.includes(monthOf(t.date)));
+const payrollMonthly = round(payroll12.reduce((s, t) => s + t.amount, 0) / 12);
+
+const statedMonthlyNet = round(
+  config.income.earners.reduce(
+    (s, e) => s + e.netPerPaycheck * (e.frequency === 'biweekly' ? 26 : 24), 0) / 12,
+);
+
+// ── The house: one-time spend since closing vs the ordinary baseline ────────
+
+const closeDate = config.realEstate[0].closedOn;
+const houseSpend = transactions.filter(
+  (t) => t.flow === FLOW.EXPENSE && t.date >= closeDate
+    && /^(Home|Utilities)/.test(t.category),
+);
+const projectMatches = config.houseProjects.items.map((p) => {
+  if (!p.payeeMatch) return { ...p, matched: [], matchedTotal: p.amount };
+  const re = new RegExp(p.payeeMatch, 'i');
+  const matched = transactions.filter(
+    (t) => t.flow === FLOW.EXPENSE && t.date >= config.realEstate[0].contractDate
+      && re.test(t.rawPayee),
+  );
+  return {
+    ...p,
+    matched: matched.map((t) => ({ date: t.date, payee: t.payee, amount: round(-t.amount) })),
+    matchedTotal: round(matched.reduce((s, t) => s + -t.amount, 0)),
+  };
+});
+
+// Property-tax reality check: the escrow is built on the pre-sale assessment.
+const AZ_EFFECTIVE_RATE = 0.0060;   // Maricopa County, owner-occupied, approx.
+const escrowTaxAnnual = round(config.mortgage.escrow.propertyTaxMonthly * 12);
+const likelyTaxAnnual = round(config.realEstate[0].purchasePrice * AZ_EFFECTIVE_RATE);
+const escrowGap = round((likelyTaxAnnual - escrowTaxAnnual) / 12);
+
+// ── Data quality ────────────────────────────────────────────────────────────
+// A dashboard that quietly averages over a broken data feed is worse than no
+// dashboard. Everything the numbers can't be trusted on gets said out loud.
+
+const dq = [];
+
+// 1. Payroll feed gaps. School-district pay is genuinely lumpy in summer, so
+//    we compare each month against the same month a year earlier as well as
+//    against the running median.
+const payrollVals = [...payrollByMonth.entries()].filter(([m]) => m < curMonth);
+const medPay = median(payrollVals.slice(-24).map(([, v]) => v).filter((v) => v > 0));
+const gapMonths = payrollVals.slice(-18)
+  .filter(([, v]) => v < medPay * 0.55)
+  .map(([m, v]) => ({ month: m, amount: round(v) }));
+if (gapMonths.length) {
+  dq.push({
+    severity: gapMonths.length > 3 ? 'serious' : 'warning',
+    title: 'Payroll deposits look incomplete in some months',
+    detail: `${gapMonths.length} of the last 18 months show payroll well below the `
+      + `$${Math.round(medPay).toLocaleString()} median — ${gapMonths.map((g) => g.month).join(', ')}. `
+      + 'Some of that is the genuine summer dip in district pay, but a run of low '
+      + 'months usually means an account connection dropped. Trailing-12 income is '
+      + 'understated by however much is missing.',
+    months: gapMonths,
+  });
+}
+
+// 2. Money that left the building without a destination on the balance sheet.
+const unresolved = transactions.filter((t) => t.eventNote?.startsWith('UNRESOLVED'));
+for (const t of unresolved) {
+  dq.push({
+    severity: 'serious',
+    title: t.eventLabel,
+    detail: t.eventNote.replace(/^UNRESOLVED:\s*/, ''),
+    amount: round(t.amount),
+    date: t.date,
+  });
+}
+
+// 3. How much of recent spending has no category to sit in.
+const recent = transactions.filter(
+  (t) => t.flow === FLOW.EXPENSE && t12.includes(monthOf(t.date)),
+);
+const uncat = recent.filter((t) => /^Uncategorized/.test(t.category));
+const uncatShare = recent.length
+  ? round((uncat.reduce((s, t) => s + -t.amount, 0)
+    / recent.reduce((s, t) => s + -t.amount, 0)) * 100, 1)
+  : 0;
+if (uncatShare > 3) {
+  dq.push({
+    severity: uncatShare > 10 ? 'warning' : 'good',
+    title: `${uncatShare}% of the last year's spending is uncategorised`,
+    detail: `${uncat.length} transactions totalling `
+      + `$${Math.round(uncat.reduce((s, t) => s + -t.amount, 0)).toLocaleString()}. `
+      + 'Category totals below are understated by roughly that much.',
+  });
+}
+
+// 4. Accounts that have stopped reporting.
+const lastSeen = new Map();
+for (const t of transactions) lastSeen.set(t.account, t.date);
+for (const a of config.accounts) {
+  const seen = lastSeen.get(a.name);
+  const days = seen ? (toTime(asOf) - toTime(seen)) / 86400000 : Infinity;
+  if (days > 75 && Math.abs(a.balance) > 100) {
+    dq.push({
+      severity: 'warning',
+      title: `${a.name} has not reported a transaction in ${Number.isFinite(days) ? Math.round(days) : 'over 900'} days`,
+      detail: `Balance is carried at $${a.balance.toLocaleString()}, but nothing has `
+        + 'come through the feed. Either the account is dormant or the connection is stale.',
+    });
+  }
+}
+
+// 5. How far back the reconstructed balance history can be trusted.
+if (trustedFrom !== months[0]) {
+  dq.push({
+    severity: 'good',
+    title: `Balance history starts ${trustedFrom}; spending history goes back to ${months[0]}`,
+    detail: 'Historical balances are recovered by rolling today\'s figures backward through '
+      + 'the ledger, which only works if every movement is recorded twice — once leaving '
+      + 'the account, once arriving. Simplifi does that and flags the pair as a transfer. '
+      + 'Mint recorded a credit-card payment only once, so rolled back through the Mint '
+      + 'years the cards reconstruct to six-figure positive balances, which is impossible. '
+      + `Net worth and balances are therefore charted from ${trustedFrom}. Spending, income, `
+      + `categories and merchants do not depend on balances and use all ${months.length} `
+      + `months back to ${months[0]}.`,
+  });
+}
+
+// 6. Transfer leakage in the Mint years.
+// Mint categorised card payments and inter-account moves inconsistently, so
+// some of them land as income and spending rather than as transfers. That
+// inflates both sides roughly equally, leaving the net about right and the
+// levels too high. Detect it by comparing each year's income to its payroll.
+{
+  const yearIncome = new Map();
+  const yearPayroll = new Map();
+  for (const t of transactions) {
+    const y = t.date.slice(0, 4);
+    if (t.flow === FLOW.INCOME) yearIncome.set(y, (yearIncome.get(y) ?? 0) + t.amount);
+    if (/payroll/i.test(t.rawPayee)) yearPayroll.set(y, (yearPayroll.get(y) ?? 0) + t.amount);
+  }
+  const inflated = [...yearIncome.entries()]
+    .filter(([y, inc]) => {
+      const pay = yearPayroll.get(y) ?? 0;
+      return pay > 20000 && inc > pay * 1.6 && y < seam.slice(0, 4);
+    })
+    .map(([y, inc]) => ({ year: y, income: round(inc), payroll: round(yearPayroll.get(y)) }));
+
+  if (inflated.length > 2) {
+    dq.push({
+      severity: 'warning',
+      title: `Spending and income levels look inflated before ${seam.slice(0, 4)}`,
+      detail: `In ${inflated.length} of the Mint years — ${inflated.map((i) => i.year).join(', ')} — `
+        + 'recorded income runs well above actual payroll, which happens when card payments and '
+        + 'moves between your own accounts get counted as income on one side and spending on the '
+        + 'other. It inflates both halves by about the same amount, so year-to-year *net* is '
+        + 'roughly right while the levels are too high. Simplifi flags both legs of a transfer, '
+        + `so anything after ${seam} is clean. Compare across the seam with that in mind.`,
+      years: inflated,
+    });
+  }
+}
+
+// 7. Escrow built on the pre-sale tax assessment.
+if (escrowGap > 40) {
+  dq.push({
+    severity: 'serious',
+    title: 'Escrow is funded on the old tax assessment',
+    detail: `The escrow collects $${escrowTaxAnnual.toLocaleString()}/yr for property tax — `
+      + 'the 2025 figure, assessed before this sale and before the renovation. On an '
+      + `$${config.realEstate[0].purchasePrice.toLocaleString()} purchase, Maricopa County is more likely `
+      + `to bill around $${likelyTaxAnnual.toLocaleString()}/yr. Expect an escrow shortage notice and a `
+      + `payment increase of roughly $${Math.round(escrowGap)}/mo once it reassesses.`,
+  });
+}
+
+// Most-serious first: the reader should hit the things worth acting on before
+// the things that are merely worth knowing.
+const DQ_ORDER = { serious: 0, warning: 1, good: 2 };
+dq.sort((a, b) => (DQ_ORDER[a.severity] ?? 3) - (DQ_ORDER[b.severity] ?? 3));
+
+const oneTimeLedger = transactions
+  .filter((t) => t.oneTime)
+  .map((t) => ({
+    date: t.date, label: t.eventLabel, note: t.eventNote,
+    amount: round(t.amount), account: t.account, payee: t.payee,
+  }));
+
+// ── Dictionary-encode the ledger ────────────────────────────────────────────
+// 18k rows of repeated strings compress far better as integer indices, and the
+// browser gets a smaller parse.
+
+const dict = { accounts: [], payees: [], categories: [], flows: [] };
+const idOf = (list, v) => {
+  let i = list.indexOf(v);
+  if (i === -1) { i = list.length; list.push(v); }
+  return i;
+};
+const dayZero = toTime(transactions[0].date);
+const ledger = transactions.map((t) => [
+  Math.round((toTime(t.date) - dayZero) / 86400000),
+  idOf(dict.accounts, t.account),
+  idOf(dict.payees, t.payee),
+  idOf(dict.categories, t.category),
+  idOf(dict.flows, t.flow),
+  Math.round(t.amount * 100),
+  t.excluded ? 1 : 0,
+]);
+
+// ── Payload ─────────────────────────────────────────────────────────────────
+
+const payload = {
+  meta: {
+    generated: new Date().toISOString(),
+    asOf,
+    firstDate: transactions[0].date,
+    lastDate: transactions[transactions.length - 1].date,
+    txCount: transactions.length,
+    dayZero: transactions[0].date,
+    months,
+    completeMonths,
+    t12,
+    trustedFrom,
+    sources: sourceSummary,
+    trustedMonths: months.slice(months.indexOf(trustedFrom)),
+    household: config.household,
+  },
+  headline: {
+    netWorth: round(now.netWorth),
+    liquid: round(now.liquid),
+    cashTotal: round(cashTotal),
+    creditTotal: round(creditTotal),
+    investTotal: round(investTotal),
+    propertyValue,
+    mortgageBalance,
+    homeEquity: round(propertyValue - mortgageBalance),
+    avgIncome, avgExpense, avgSavings, avgExpense3,
+    payrollMonthly, statedMonthlyNet,
+    savingsRate: round((avgSavings / Math.max(1, statedMonthlyNet)) * 100, 1),
+    burnRate: avgExpense,
+    runwayMonths: round(round(cashTotal + creditTotal) / Math.max(1, avgExpense), 1),
+    housingRatio: round(
+      ((config.mortgage.buydown.borrowerPI + config.mortgage.escrow.totalMonthly)
+        / Math.max(1, statedMonthlyNet)) * 100, 1),
+  },
+  dataQuality: dq,
+  oneTimeEvents: oneTimeLedger,
+  payrollByMonth: [...payrollByMonth.entries()].map(([m, v]) => ({ month: m, amount: round(v) })),
+  monthlyOrdinary,
+  monthly,
+  netWorth,
+  categories: { t12: cats12, all: catsAll },
+  merchants: merchants12,
+  recurring,
+  budgets: budgetVsActual(cats12, config.budgets, 12, curCats),
+  anomalies: anomalies(catsAll, completeMonths),
+  accounts: config.accounts,
+  investments: config.investments,
+  realEstate: config.realEstate,
+  soldHome: config.soldHome,
+  taxReserve: config.taxReserve,
+  income: config.income,
+  mortgage: {
+    ...config.mortgage,
+    currentBalance: mortgageBalance,
+    schedule: amort,
+    totalInterest: round(amort.reduce((s, r) => s + r.interest, 0)),
+    payoffMonth: amort[amort.length - 1].month,
+  },
+  house: {
+    closeDate,
+    projects: projectMatches,
+    sinkingFunds: config.sinkingFunds,
+    spendSinceClose: round(houseSpend.reduce((s, t) => s + -t.amount, 0)),
+    taxCheck: {
+      escrowTaxAnnual, likelyTaxAnnual, escrowGap,
+      rate: AZ_EFFECTIVE_RATE,
+      note: config.mortgage.escrow.taxBasisNote,
+    },
+  },
+  ledger: { dict, rows: ledger },
+};
+
+// ── Encrypt & write ─────────────────────────────────────────────────────────
+
+const passphrase = process.env.FINANCE_PASSPHRASE ?? await prompt();
+const weak = checkPassphrase(passphrase);
+if (weak) {
+  console.error(`\n  Refusing to encrypt: ${weak}\n`);
+  console.error('  The encrypted file goes into a PUBLIC repo. Iteration count slows an');
+  console.error('  attacker down; it does not stop one. The passphrase is the actual lock.');
+  console.error('  Use five or six random words — "copper-lantern-vivid-otter-marsh" style.');
+  console.error('  That is easy to type, easy to remember, and not guessable.\n');
+  process.exit(1);
+}
+
+/** Cheap entropy screen. Not a strength meter — a floor. */
+function checkPassphrase(p) {
+  if (!p) return 'no passphrase given';
+  if (p.length < 20) return `only ${p.length} characters (20 minimum)`;
+  const words = p.split(/[\s\-_.]+/).filter((w) => w.length > 2);
+  const classes = [/[a-z]/, /[A-Z]/, /\d/, /[^\w\s]/].filter((r) => r.test(p)).length;
+  if (words.length < 4 && classes < 3) {
+    return 'too predictable — use 5+ random words, or mix cases, digits and symbols';
+  }
+  if (/^(password|passphrase|letmein|finance|money|budget)/i.test(p)) {
+    return 'starts with a word an attacker would try first';
+  }
+  return null;
+}
+
+const json = JSON.stringify(payload);
+const gz = gzipSync(Buffer.from(json, 'utf8'), { level: 9 });
+const enc = await encryptPayload(gz, passphrase);
+
+mkdirSync(OUT_DIR, { recursive: true });
+writeFileSync(OUT_FILE, JSON.stringify(enc));
+// The cleartext payload is a debugging aid, not an output. It lands in the
+// gitignored private directory and only when explicitly requested.
+if (process.env.FINANCE_DEBUG) {
+  writeFileSync(path.join(SRC, 'payload.debug.json'), JSON.stringify(payload, null, 2));
+}
+
+const kb = (n) => `${(n / 1024).toFixed(0)} KB`;
+console.log(`
+  Finance payload built
+  ─────────────────────────────────────────────
+  transactions   ${payload.meta.txCount.toLocaleString()}  (${payload.meta.firstDate} → ${payload.meta.lastDate})
+  sources        Mint ${sourceSummary.mint.toLocaleString()} → ${seam}, then Simplifi ${sourceSummary.simplifi.toLocaleString()}
+                 (${sourceSummary.simplifiDropped.toLocaleString()} Simplifi rows before the seam superseded by Mint)
+  trusted from   ${trustedFrom}
+  months         ${months.length}
+  categories     ${cats12.length} active in the last 12 months
+  recurring      ${recurring.length} detected
+  data flags     ${dq.length}
+  json           ${kb(json.length)}
+  gzipped        ${kb(gz.length)}
+  encrypted      ${kb(JSON.stringify(enc).length)}   → public/finances/data.enc.json
+
+  net worth      $${payload.headline.netWorth.toLocaleString()}
+  liquid         $${payload.headline.liquid.toLocaleString()}
+  home equity    $${payload.headline.homeEquity.toLocaleString()}
+`);
+
+function prompt() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((res) => rl.question('  Passphrase: ', (a) => { rl.close(); res(a); }));
+}
