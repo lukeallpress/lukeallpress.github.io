@@ -1383,9 +1383,10 @@ async function boot() {
     // background tab, which would leave the unlock hung at "Deriving key…".
     await new Promise((r) => setTimeout(r, 24));
 
+    const attempted = input.value;
     try {
       const t0 = performance.now();
-      D = await unlock(envelope, input.value);
+      D = await unlock(envelope, attempted);
       LEDGER = expandLedger(D.ledger, D.meta.dayZero);
       assignCategoryColours(D.categories.t12);
       status.dataset.tone = 'ok';
@@ -1394,14 +1395,35 @@ async function boot() {
       buildShell();
     } catch (err) {
       status.dataset.tone = 'error';
-      status.textContent = err.code === 'WRONG_PASSPHRASE'
-        ? 'That passphrase does not decrypt this file.'
-        : err.message;
+      status.innerHTML = err.code === 'WRONG_PASSPHRASE'
+        ? 'That passphrase does not decrypt this file. '
+          + `<span class="gate-count">(${attempted.length} characters — use “show” to check `
+          + 'nothing was autofilled.)</span>'
+        : esc(err.message);
       submit.disabled = false;
       input.disabled = false;
       input.focus();
       input.select();
     }
+  });
+
+  // A masked field cannot tell you a password manager filled it with something
+  // else, which is exactly the failure this page invites by living on
+  // github.io. The toggle makes what is actually there visible.
+  const reveal = document.getElementById('fin-reveal');
+  reveal?.addEventListener('click', () => {
+    const shown = input.type === 'text';
+    input.type = shown ? 'password' : 'text';
+    reveal.textContent = shown ? 'show' : 'hide';
+    reveal.setAttribute('aria-pressed', String(!shown));
+    reveal.setAttribute('aria-label', shown ? 'Show passphrase' : 'Hide passphrase');
+    input.focus();
+  });
+
+  // Report the character count on a failure — if it does not match what you
+  // typed, something filled or altered the field.
+  input.addEventListener('input', () => {
+    if (status.dataset.tone === 'error') { status.textContent = ''; delete status.dataset.tone; }
   });
 
   input.focus();

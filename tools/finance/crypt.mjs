@@ -57,3 +57,24 @@ export async function encryptPayload(bytes, passphrase) {
     ct: b64(ct),
   };
 }
+
+/**
+ * Round-trip check. Takes the envelope straight back apart with the same
+ * passphrase, so the build fails here rather than in someone's browser.
+ */
+export async function verifyPayload(envelope, passphrase) {
+  const b64d = (x) => Buffer.from(x, 'base64');
+  const key = await deriveKey(passphrase, b64d(envelope.salt), envelope.iterations);
+  try {
+    const plain = await subtle.decrypt(
+      { name: 'AES-GCM', iv: b64d(envelope.iv) }, key, b64d(envelope.ct),
+    );
+    const { gunzipSync } = await import('node:zlib');
+    const json = envelope.compression === 'gzip'
+      ? gunzipSync(Buffer.from(plain)).toString('utf8')
+      : Buffer.from(plain).toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}

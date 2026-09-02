@@ -161,12 +161,21 @@
       .gate h1 { font-size: 1.55rem; margin-bottom: 0.4rem; }
       .gate p { color: var(--ink-2); font-size: 0.9rem; margin-bottom: 1.5rem; }
       .gate form { display: flex; gap: 0.5rem; }
+      .pass-wrap { flex: 1; min-width: 0; position: relative; display: flex; }
       .gate input {
         flex: 1; min-width: 0;
-        font: inherit; padding: 0.7rem 0.85rem;
+        font: inherit; padding: 0.7rem 3.4rem 0.7rem 0.85rem;
         background: var(--plane); color: var(--ink);
         border: 1px solid var(--line); border-radius: 8px;
       }
+      .gate input[type='text'] { font-family: var(--mono); font-size: 0.9em; }
+      .pass-eye {
+        position: absolute; right: 0.45rem; top: 50%; transform: translateY(-50%);
+        border: 0; background: none; cursor: pointer; padding: 0.25rem 0.4rem;
+        font-size: 0.75rem; color: var(--ink-3); border-radius: 5px;
+      }
+      .pass-eye:hover { color: var(--ink); background: var(--surface-2); }
+      .gate-count { font-variant-numeric: tabular-nums; }
       .gate button[type='submit'] {
         padding: 0.7rem 1.15rem; border: 0; border-radius: 8px;
         background: var(--ink); color: var(--plane);
@@ -534,14 +543,28 @@
           AES-256-GCM blob; the passphrase never leaves your browser.
         </p>
         <form id="fin-unlock" autocomplete="off">
-          <input
-            type="password"
-            id="fin-pass"
-            placeholder="Passphrase"
-            autocomplete="current-password"
-            spellcheck="false"
-            aria-label="Passphrase"
-          />
+          <!-- Autofill is suppressed deliberately. This page is served from
+               github.io, so a password manager holding a GitHub credential for
+               that domain will happily fill it here, and a masked field gives
+               no clue that it did. Hence the reveal toggle too. -->
+          <div class="pass-wrap">
+            <input
+              type="password"
+              id="fin-pass"
+              placeholder="Passphrase"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              data-form-type="other"
+              aria-label="Passphrase"
+            />
+            <button type="button" id="fin-reveal" class="pass-eye"
+              aria-label="Show passphrase" aria-pressed="false">show</button>
+          </div>
           <button type="submit">Unlock</button>
         </form>
         <div class="gate-status" id="fin-status" role="status" aria-live="polite"></div>

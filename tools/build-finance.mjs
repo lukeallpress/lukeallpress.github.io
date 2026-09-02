@@ -20,7 +20,7 @@ import {
   detectRecurring, netWorthSeries, amortisation, budgetVsActual, anomalies,
   round, toTime, fromTime, median,
 } from './finance/analyze.mjs';
-import { encryptPayload } from './finance/crypt.mjs';
+import { encryptPayload, verifyPayload } from './finance/crypt.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SRC = path.join(ROOT, 'finance-private');
@@ -495,6 +495,17 @@ const json = JSON.stringify(payload);
 const gz = gzipSync(Buffer.from(json, 'utf8'), { level: 9 });
 const enc = await encryptPayload(gz, passphrase);
 
+// Decrypt what we just produced, with the passphrase as the shell actually
+// handed it over, before anything is written. If the two disagree the file is
+// unopenable and the only place to find that out is the browser, an hour later.
+const verified = await verifyPayload(enc, passphrase);
+if (!verified) {
+  console.error('\n  Encryption verification FAILED — refusing to write the file.');
+  console.error('  The blob did not decrypt with the passphrase it was just built from,');
+  console.error('  which should be impossible. Do not publish; report this.\n');
+  process.exit(1);
+}
+
 mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(OUT_FILE, JSON.stringify(enc));
 // The cleartext payload is a debugging aid, not an output. It lands in the
@@ -521,6 +532,7 @@ console.log(`
   json           ${kb(json.length)}
   gzipped        ${kb(gz.length)}
   encrypted      ${kb(JSON.stringify(enc).length)}   → public/finances/data.enc.json
+  verified       decrypts with the passphrase given (${verified.meta.txCount.toLocaleString()} rows read back)
 
   net worth      $${payload.headline.netWorth.toLocaleString()}
   liquid         $${payload.headline.liquid.toLocaleString()}

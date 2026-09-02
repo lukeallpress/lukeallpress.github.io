@@ -10,7 +10,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "finance": "node tools/build-finance.mjs",
-    "finance:publish": "node tools/build-finance.mjs && git add -f public/finances/data.enc.json && git commit -m 'Update finance data' && git push"
+    "finance:publish": "node tools/build-finance.mjs && git add -f public/finances/data.enc.json && git commit -m 'Update finance data' && git push",
+    "finance:check": "node tools/check-finance.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.11",

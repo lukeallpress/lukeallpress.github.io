@@ -34,6 +34,33 @@ appear anywhere in this repo's source — they all travel inside the encrypted f
 Set `FINANCE_DEBUG=1` to also write `finance-private/payload.debug.json`, the
 cleartext payload, for inspecting what the browser will receive. It is gitignored.
 
+## When the passphrase does not work
+
+```bash
+npm run finance:check     # prompts; tests against the published blob in a second
+```
+
+It reports whether the passphrase opens the file, and if it only opens it after a
+small alteration — a trailing space, a curly quote, a stripped `!` — it says which,
+because that means the shell or a paste changed it on the way in rather than your
+memory being wrong.
+
+Two things make this failure common on this particular site:
+
+- **zsh.** An unquoted or double-quoted `!` triggers history expansion, and `$word`
+  expands inside double quotes. Typing the passphrase at the `npm run finance`
+  prompt avoids both; it is taken literally.
+- **Password managers.** The page is served from `github.io`, so a manager holding
+  a GitHub credential for that domain will offer to fill the unlock field, and a
+  masked input gives no sign that it did. Autofill is suppressed
+  (`autocomplete="off"` plus the 1Password / LastPass / Bitwarden ignore
+  attributes) and the field has a **show** toggle, so what is actually in it can be
+  read before submitting. A failed attempt also reports the character count.
+
+The build verifies its own output before writing: it decrypts the blob it just
+produced with the same passphrase and refuses to write the file if that fails. So a
+published payload is always openable by whatever the build actually received.
+
 ## The passphrase
 
 The ciphertext is public, so the passphrase is the whole lock. Key derivation is
