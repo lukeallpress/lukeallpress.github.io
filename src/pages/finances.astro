@@ -116,6 +116,7 @@
       [hidden] { display: none !important; }
       html { -webkit-text-size-adjust: 100%; }
       body {
+        overflow-x: hidden;
         font-family: var(--sans);
         background: var(--plane);
         color: var(--ink);
@@ -199,13 +200,15 @@
         border-bottom: 1px solid var(--line);
       }
       .topbar-inner {
-        max-width: 84rem; margin: 0 auto;
+        max-width: 96rem; margin: 0 auto;
         padding: 0.7rem clamp(1rem, 3vw, 2rem);
         display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
       }
       .brand { font-family: var(--serif); font-size: 1.02rem; font-weight: 520; white-space: nowrap; }
       .brand span { color: var(--ink-3); font-family: var(--sans); font-size: 0.78rem; font-weight: 400; margin-left: 0.5rem; }
-      .nav { display: flex; gap: 0.15rem; overflow-x: auto; flex: 1; scrollbar-width: none; }
+      /* min-width:0 is what lets the nav actually shrink inside the flex row —
+         without it the buttons force the bar wider than the viewport. */
+      .nav { display: flex; gap: 0.15rem; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: none; }
       .nav::-webkit-scrollbar { display: none; }
       .nav-btn {
         border: 0; background: none; cursor: pointer;
@@ -220,7 +223,41 @@
         border-radius: 7px; width: 32px; height: 32px; cursor: pointer;
         display: grid; place-items: center; font-size: 0.9rem;
       }
-      main { max-width: 84rem; margin: 0 auto; padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1rem, 3vw, 2rem) 5rem; }
+      /* The comparison panel rides alongside the content on wide screens and
+         folds under it when there is no room. */
+      .shell {
+        max-width: 96rem; margin: 0 auto;
+        padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1rem, 3vw, 2rem) 5rem;
+        display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: clamp(1rem, 2.5vw, 2rem);
+        align-items: start;
+      }
+      .shell[data-side='hidden'] { grid-template-columns: minmax(0, 1fr); max-width: 84rem; }
+      .shell[data-side='hidden'] .side { display: none; }
+      main { min-width: 0; }
+      @media (max-width: 1100px) {
+        .shell { grid-template-columns: minmax(0, 1fr); }
+        .side { order: -1; }
+      }
+
+      .side { position: sticky; top: 4.4rem; }
+      .side-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem 1.1rem; box-shadow: var(--shadow); }
+      .side-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.15rem; }
+      .side-head h3 { font-size: 1rem; }
+      .side-sub { font-size: 0.74rem; color: var(--ink-3); line-height: 1.45; margin-bottom: 0.75rem; }
+      .side-total { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.65rem; border-radius: 8px; background: var(--surface-2); margin-bottom: 0.7rem; }
+      .side-total-num { font-family: var(--serif); font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--neg); }
+      .side-total-lab { font-size: 0.72rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+      .side-rows { display: grid; gap: 0.02rem; }
+      .side-row { display: grid; grid-template-columns: 1fr 4.6rem 3.6rem; gap: 0.4rem; align-items: baseline; padding: 0.3rem 0; border-bottom: 1px solid var(--line-2); font-size: 0.79rem; }
+      .side-row:last-child { border-bottom: 0; }
+      .side-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .side-row-vals { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-3); font-size: 0.74rem; white-space: nowrap; }
+      .side-row-delta { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+      .side-row-delta.up { color: var(--neg); }
+      .side-row-delta.down { color: var(--pos); }
+      .side-row-delta.flat { color: var(--ink-3); font-weight: 400; }
+      .side-flag { font-size: 0.62rem; color: var(--ink-3); border: 1px solid var(--line); border-radius: 3px; padding: 0 0.2rem; margin-left: 0.25rem; vertical-align: 1px; }
+      .side-note { font-size: 0.72rem; color: var(--ink-3); line-height: 1.5; margin-top: 0.7rem; padding-top: 0.65rem; border-top: 1px solid var(--line-2); }
 
       /* Below ~820px the nav can no longer share a line with the brand without
          being crushed, so it takes a row of its own and scrolls horizontally. */
@@ -645,10 +682,15 @@
         <div class="topbar-inner">
           <div class="brand">Household<span id="fin-asof"></span></div>
           <nav class="nav" id="fin-nav" aria-label="Sections"></nav>
+          <button type="button" class="icon-btn" id="fin-side-toggle"
+            aria-label="Toggle the old-versus-new panel" aria-pressed="true" title="Old house vs new">⇄</button>
           <button type="button" class="icon-btn" id="fin-theme" aria-label="Toggle dark mode">◐</button>
         </div>
       </header>
-      <main id="fin-main"></main>
+      <div class="shell">
+        <main id="fin-main"></main>
+        <aside id="fin-side" class="side" aria-label="Old house against new"></aside>
+      </div>
     </div>
 
     <script>

@@ -134,6 +134,61 @@ const delta = (n, invert = false) => {
 
 
 
+
+// ── Old house against new, as a standing sidebar ────────────────────────────
+
+/**
+ * Kept out of the view rotation on purpose: this comparison is the context for
+ * every other number on the page right now, so it stays visible rather than
+ * being somewhere you have to remember to go.
+ */
+function renderSidebar() {
+  const host = document.getElementById('fin-side');
+  const H = D.houseCompare;
+  if (!host || !H) return;
+
+  const rows = H.rows.map((r) => {
+    const dir = r.change > 0.5 ? 'up' : r.change < -0.5 ? 'down' : 'flat';
+    const flags = [];
+    if (r.estimate) flags.push('<span class="side-flag" title="Stated rate, not yet measured">stated</span>');
+    if (r.annualised) flags.push('<span class="side-flag" title="Measured in peak summer">peak</span>');
+    else if (r.thin) flags.push('<span class="side-flag" title="Few charges since the move">thin</span>');
+    return `<div class="side-row" title="${esc(r.note ?? '')}">
+      <span class="side-row-name">${esc(r.label.replace(/^Mortgage — /, ''))}${flags.join('')}</span>
+      <span class="side-row-vals">${money(r.before)} → ${money(r.after)}</span>
+      <span class="side-row-delta ${dir}">${r.change === 0 ? '—'
+    : `${r.change > 0 ? '+' : '−'}${money(Math.abs(r.change))}`}</span>
+    </div>`;
+  }).join('');
+
+  const electric = H.rows.find((r) => r.key === 'electric');
+
+  host.innerHTML = `
+    <div class="side-card">
+      <div class="side-head">
+        <h3>Old house → new</h3>
+      </div>
+      <p class="side-sub">${esc(H.oldName)} to ${esc(H.newName)}, moved
+        ${dateLabel(H.movedOn)}. Monthly running costs, measured either side.</p>
+
+      <div class="side-total">
+        <span class="side-total-lab">More each month</span>
+        <span class="side-total-num">+${money(H.change)}</span>
+      </div>
+
+      <div class="side-rows">${rows}</div>
+
+      <p class="side-note">
+        ${money(H.totalBefore)} → ${money(H.totalAfter)} a month.
+        ${electric?.annualised
+    ? `Electricity is measured across ${H.newWindow.months} months of Phoenix summer — the worst
+       of the year for a house with air conditioning and a pool pump. Over a full year it is
+       nearer ${money(electric.annualised)}, which puts the true increase closer to
+       <b>${money(H.changeAnnualised)}</b>.` : ''}
+      </p>
+    </div>`;
+}
+
 // ═══ VIEW: Commitments ══════════════════════════════════════════════════════
 
 function viewCommitments() {
@@ -1449,6 +1504,69 @@ function viewHouse() {
   }
   root.append(tl);
 
+  // ── The move, as a one-time budget ──────────────────────────────────────
+  const MC = D.moveCosts;
+  if (MC) {
+    root.append(h('<h3 class="section-head">What the move cost</h3>'));
+    root.append(h(`<p class="lede">${money(MC.total)} across ${MC.items.length} listed items, of
+      which <b>${money(MC.transaction)}</b> is the transaction itself — earnest money, cash to
+      close, inspection and appraisal — funded from savings and the Wealthfront sale rather than
+      from monthly income. That leaves <b>${money(MC.excludingTransaction)}</b> of actual move
+      and setup spending. None of it is in the monthly baseline, which is the point: a burst
+      like this says nothing about whether the house can be carried afterwards.</p>`));
+
+    const grid = h('<section class="stat-grid stat-grid--4"></section>');
+    for (const g of MC.groups) {
+      grid.append(h(`<div class="stat">
+        <div class="stat-label">${esc(g.label)}</div>
+        <div class="stat-value">${money(g.total)}</div>
+        <div class="stat-sub">${g.count} item${g.count === 1 ? '' : 's'} · ${esc(g.note)}</div>
+      </div>`));
+    }
+    root.append(grid);
+
+    for (const g of MC.groups) {
+      const sec = h(`<section class="commit-group">
+        <div class="commit-head">
+          <div><h3>${esc(g.label)}</h3><p class="muted">${esc(g.note)}</p></div>
+          <div class="commit-total">${money(g.total)}</div>
+        </div>
+        <div class="table-wrap"><table class="data-table"><thead><tr>
+          <th>Item</th><th class="num">Listed</th><th class="num">Actually paid</th>
+          <th class="num">Difference</th><th>Note</th>
+        </tr></thead><tbody></tbody></table></div>
+      </section>`);
+      const tb = sec.querySelector('tbody');
+      for (const it of g.items) {
+        const v = it.variance;
+        tb.append(h(`<tr${it.unpriced ? ' class="row-zero"' : ''}>
+          <td>${esc(it.name)}
+            ${it.estimate ? '<span class="pill pill--quoted">estimate</span>' : ''}
+            ${it.unpriced ? '<span class="pill">no cost yet</span>' : ''}</td>
+          <td class="num">${it.cost != null ? money2(it.cost) : '—'}</td>
+          <td class="num">${it.paid ? money2(it.paid.total) : '<span class="muted">—</span>'}</td>
+          <td class="num ${v == null ? '' : v > 0 ? 'neg' : v < 0 ? 'pos' : 'muted'}">
+            ${v == null ? '—' : v === 0 ? 'on the nose' : `${v > 0 ? '+' : '−'}${money(Math.abs(v))}`}</td>
+          <td class="muted">${esc(it.note ?? it.rawCost ?? '')}</td>
+        </tr>`));
+      }
+      root.append(sec);
+    }
+
+    if (MC.variances.length) {
+      root.append(h(`<div class="method">
+        <h4>Worth a second look</h4>
+        ${MC.variances.map((v) => `<p><b>${esc(v.name)}</b> — listed ${money2(v.cost)},
+          ledger shows ${money2(v.paid.total)}${v.variance < 0
+    ? `. Either a balance is still due or the estimate was high.`
+    : `. More than budgeted.`}</p>`).join('')}
+        ${MC.estimates.length ? `<p>Still estimates rather than quotes:
+          ${MC.estimates.map((e) => esc(e.name)).join(', ')} —
+          ${money(MC.estimatedValue)} between them.</p>` : ''}
+      </div>`));
+    }
+  }
+
   // Projects
   root.append(h('<h3 class="section-head">Projects since closing</h3>'));
   const done = D.house.projects.filter((p) => p.status === 'done');
@@ -1641,6 +1759,21 @@ function buildShell() {
   }
 
   document.getElementById('fin-asof').textContent = `Data through ${dateLabel(D.meta.asOf)}`;
+
+  renderSidebar();
+  const shell = document.querySelector('.shell');
+  const sideBtn = document.getElementById('fin-side-toggle');
+  const readSide = () => { try { return localStorage.getItem('fin-side'); } catch { return null; } };
+  if (readSide() === 'hidden') {
+    shell.dataset.side = 'hidden';
+    sideBtn?.setAttribute('aria-pressed', 'false');
+  }
+  sideBtn?.addEventListener('click', () => {
+    const hidden = shell.dataset.side === 'hidden';
+    if (hidden) delete shell.dataset.side; else shell.dataset.side = 'hidden';
+    sideBtn.setAttribute('aria-pressed', String(hidden));
+    try { localStorage.setItem('fin-side', hidden ? 'shown' : 'hidden'); } catch { /* fine */ }
+  });
 
   const fromHash = location.hash.slice(1);
   if (VIEWS[fromHash]) currentView = fromHash;

@@ -97,6 +97,26 @@ export function commitments(config, payload, transactions) {
     items: savings,
   });
 
+  // Costs the new house needs that the twelve-month baseline has not seen yet.
+  // Adding them explicitly keeps the forecast from being quietly optimistic.
+  const planned = (c?.planned ?? []).map((x) => ({
+    name: x.name,
+    monthly: round(x.monthly),
+    startsOn: x.startsOn,
+    planned: true,
+    note: x.note,
+    source: 'Stated',
+  }));
+  if (planned.length) {
+    groups.push({
+      key: 'planned',
+      title: 'Starting now',
+      subtitle: 'New services the house needs. Not in the measured baseline, so added on top.',
+      flexibility: 'low',
+      items: planned,
+    });
+  }
+
   // ── Payroll deductions ────────────────────────────────────────────────────
   const periods = config.income.periodsPerYear ?? 26;
   groups.push({
@@ -168,8 +188,15 @@ export function commitments(config, payload, transactions) {
     .reduce((s, g) => s + g.monthly, 0));
 
   // What the changes already made are worth.
-  const changed = savings.filter((s) => s.status === 'stopped' || s.status === 'reduced');
+  const ended = (c?.ended ?? []).map((x) => ({
+    ...x, monthly: 0, was: round(x.was), source: 'Ledger',
+  }));
+  const changed = [
+    ...savings.filter((s) => s.status === 'stopped' || s.status === 'reduced'),
+    ...ended,
+  ];
   const alreadySaved = round(changed.reduce((s, x) => s + (x.was - x.monthly), 0));
+  const plannedMonthly = round(planned.reduce((s, x) => s + x.monthly, 0));
   const remainingCandidates = round(savings
     .filter((s) => s.cutCandidate || s.verify)
     .reduce((s, x) => s + x.monthly, 0));
@@ -182,6 +209,9 @@ export function commitments(config, payload, transactions) {
     stoppable,
     alreadySaved,
     changed,
+    ended,
+    planned,
+    plannedMonthly,
     remainingCandidates,
     months: recent,
     takeHomeShare: round((total / Math.max(1, pay.monthlyNet)) * 100, 1),

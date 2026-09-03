@@ -113,6 +113,61 @@ export function buildRunsheet(p) {
     w();
   }
 
+  // ── Old house against new ────────────────────────────────────────────────
+  const HC = p.houseCompare;
+  if (HC) {
+    w('## Old house → new, monthly running costs');
+    w();
+    w(table(['Line', 'Old', 'New', 'Change'],
+      HC.rows.map((r) => [r.label, money(r.before), money(r.after),
+        r.change === 0 ? '—' : `${r.change > 0 ? '+' : '−'}${money(Math.abs(r.change))}`])
+        .concat([['**Total**', `**${money(HC.totalBefore)}**`, `**${money(HC.totalAfter)}**`,
+          `**+${money(HC.change)}**`]]),
+      ['l', 'r', 'r', 'r']));
+    w();
+    const el = HC.rows.find((r) => r.key === 'electric');
+    if (el?.annualised) {
+      w(`Electricity is the surprise: ${money(el.before)} to ${money(el.after)}. That is measured `
+        + `across ${HC.newWindow.months} months of Phoenix summer, the worst of the year for a `
+        + `house with air conditioning and a pool pump, so a full year is nearer `
+        + `${money(el.annualised)} — which puts the true increase closer to `
+        + `**${money(HC.changeAnnualised)}/mo** than ${money(HC.change)}.`);
+      w();
+    }
+    w(`Two things moved in your favour: the HOA is gone, and the solar loan was cleared out of `
+      + `the sale proceeds.`);
+    w();
+    w('---');
+    w();
+  }
+
+  // ── The move ─────────────────────────────────────────────────────────────
+  const MC = p.moveCosts;
+  if (MC) {
+    w('## What the move cost, one time');
+    w();
+    w(`${money(MC.total)} listed, of which ${money(MC.transaction)} is the transaction itself — `
+      + `earnest money, cash to close, inspection, appraisal — funded from savings and the `
+      + `Wealthfront sale rather than from income. That leaves **${money(MC.excludingTransaction)}** `
+      + `of move and setup spending. None of it sits in the monthly baseline.`);
+    w();
+    w(table(['', 'Total', 'Items'],
+      MC.groups.map((g) => [g.label, money(g.total), String(g.count)]), ['l', 'r', 'r']));
+    w();
+    if (MC.variances.length) {
+      w('Worth a second look:');
+      w();
+      for (const v of MC.variances) {
+        w(`- **${v.name}** — listed ${money(v.cost)}, ledger shows ${money(v.paid.total)}`
+          + `${v.variance < 0 ? '. Either a balance is still due or the estimate was high.'
+            : '. More than budgeted.'}`);
+      }
+      w();
+    }
+    w('---');
+    w();
+  }
+
   // ── Position ──────────────────────────────────────────────────────────────
   w('## Where things stand');
   w();

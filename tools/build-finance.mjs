@@ -24,6 +24,8 @@ import { encryptPayload, verifyPayload } from './finance/crypt.mjs';
 import { buildRunsheet } from './finance/runsheet.mjs';
 import { affordability } from './finance/affordability.mjs';
 import { commitments } from './finance/commitments.mjs';
+import { houseCompare } from './finance/housecompare.mjs';
+import { moveCosts } from './finance/movecosts.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SRC = path.join(ROOT, 'finance-private');
@@ -490,6 +492,8 @@ const payload = {
 };
 
 payload.commitments = commitments(config, payload, transactions);
+payload.houseCompare = houseCompare(config, payload, transactions);
+payload.moveCosts = moveCosts(path.join(SRC, 'move-costs.csv'), config, transactions);
 payload.affordability = affordability(config, payload, transactions, cats12);
 
 // ── Encrypt & write ─────────────────────────────────────────────────────────
@@ -573,6 +577,8 @@ console.log(`
                  standing transfers $${payload.affordability.savingsNow.toLocaleString()}/mo (was $${payload.affordability.savingsTrailing.toLocaleString()})
                  max realistic trim $${payload.affordability.maxTrim.toLocaleString()} → still $${payload.affordability.afterMaxTrimNow.toLocaleString()} today, $${payload.affordability.afterMaxTrimLater.toLocaleString()} in late 2027
   commitments    $${payload.commitments.total.toLocaleString()}/mo committed · $${payload.commitments.stoppable.toLocaleString()}/mo stoppable
+  old vs new     $${payload.houseCompare.totalBefore.toLocaleString()} → $${payload.houseCompare.totalAfter.toLocaleString()}/mo  (${payload.houseCompare.change > 0 ? '+' : ''}$${payload.houseCompare.change.toLocaleString()})${payload.moveCosts ? `
+  move budget    $${payload.moveCosts.total.toLocaleString()} listed · $${payload.moveCosts.excludingTransaction.toLocaleString()} beyond the transaction itself` : ''}
 
   net worth      $${payload.headline.netWorth.toLocaleString()}
   liquid         $${payload.headline.liquid.toLocaleString()}

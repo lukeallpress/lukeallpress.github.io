@@ -75,7 +75,13 @@ export function affordability(config, payload, transactions, catRollup) {
     byCategory.set(top, (byCategory.get(top) ?? 0) + amt);
   }
 
-  const baseline = round([...byCategory.values()].reduce((s, v) => s + v, 0) / 12);
+  // Costs the house will carry that the last twelve months never saw — pool
+  // service and pest control were set up after the move, so the measured
+  // baseline understates what the house actually costs to run.
+  const planned = payload.commitments?.planned ?? [];
+  const plannedMonthly = round(planned.reduce((s2, x) => s2 + x.monthly, 0));
+  const measuredBaseline = round([...byCategory.values()].reduce((s2, v) => s2 + v, 0) / 12);
+  const baseline = round(measuredBaseline + plannedMonthly);
   const setupMonthly = round(setup / 12);
   const oldHousingMonthly = round(oldHousing / 12);
 
@@ -199,6 +205,9 @@ export function affordability(config, payload, transactions, catRollup) {
 
   return {
     baseline,
+    measuredBaseline,
+    plannedMonthly,
+    planned,
     setupMonthly,
     oldHousingMonthly,
     housingNow,
