@@ -39,6 +39,11 @@ const FLEXIBILITY = {
 /** Housing lines in the old ledger that the new mortgage replaces. */
 const OLD_HOUSING = /nova|home loans|solare ranch|service\* general buye/i;
 
+/** Categories whose spending since the contract date is move-in, not ongoing. */
+const SETUP_CATEGORIES = new Set([
+  'Home:Home Improvement', 'Home:Furnishings', 'Home:Home Services', 'Home:Pool',
+]);
+
 export function affordability(config, payload, transactions, catRollup) {
   const H = payload.headline;
   const m = config.mortgage;
@@ -47,8 +52,11 @@ export function affordability(config, payload, transactions, catRollup) {
   const tax = payload.paycheck.tax;
   const t12 = new Set(payload.meta.t12);
 
-  // Baseline: what was actually spent, minus the housing it no longer pays for.
+  // Baseline: what was actually spent, minus the housing it no longer pays for,
+  // and minus the move-in spending that will not repeat.
   let oldHousing = 0;
+  let setup = 0;
+  const contractDate = config.realEstate[0].contractDate;
   const byCategory = new Map();
   for (const t of transactions) {
     if (t.flow !== 'expense') continue;
@@ -59,12 +67,36 @@ export function affordability(config, payload, transactions, catRollup) {
       oldHousing += amt;
       continue;
     }
+    if (SETUP_CATEGORIES.has(t.category) && t.date >= contractDate) {
+      setup += amt;
+      continue;
+    }
     const top = (t.category || 'Uncategorized').split(':')[0];
     byCategory.set(top, (byCategory.get(top) ?? 0) + amt);
   }
 
   const baseline = round([...byCategory.values()].reduce((s, v) => s + v, 0) / 12);
+  const setupMonthly = round(setup / 12);
   const oldHousingMonthly = round(oldHousing / 12);
+
+  // Standing savings transfers are cash leaving the account. They are not
+  // spending, so they sit below the operating line — but they are not free
+  // either, and the earlier version of this model left them out entirely and
+  // then offered "stop investing" as a way to close a gap that had never
+  // included them. That double-counted. Both lines are shown now.
+  const monthly = payload.monthlyOrdinary ?? [];
+  const recent3 = payload.meta.t12.slice(-3);
+  const savingsObserved = round(
+    monthly.filter((x) => recent3.includes(x.month))
+      .reduce((s, x) => s + x.savings, 0) / 3,
+  );
+  // Prefer the stated standing orders over the observed three-month average.
+  // The observed figure is noisy right now — July shows a net *inflow* because
+  // of the Wealthfront liquidation — whereas the standing orders are what will
+  // actually leave next month, which is the number a forecast needs.
+  const stated = payload.commitments?.groups?.find((g) => g.key === 'savings');
+  const savingsNow = stated ? round(stated.monthly) : savingsObserved;
+  const savingsTrailing = round(H.avgSavings);
 
   const housingNow = round(bd.borrowerPI + m.escrow.totalMonthly);
   const housingLater = round(
@@ -96,54 +128,68 @@ export function affordability(config, payload, transactions, catRollup) {
     ...s,
     baseline,
     income: sustainableIncome,
+    // The operating gap: income against housing and living costs, before any
+    // saving. This is what has to close for the house to be carried on income
+    // rather than on the proceeds of selling the last one.
     surplus: round(sustainableIncome - s.housing - baseline),
+    netCash: round(sustainableIncome - s.housing - baseline - savingsNow),
     housingShare: round((s.housing / sustainableIncome) * 100, 1),
   }));
 
   const gap = -scenarios[2].surplus;
+  const gapNow = -scenarios[0].surplus;
 
-  // Levers, in the order a household would actually reach for them.
-  const levers = [];
-
-  const investing = round(Math.max(0, H.avgSavings));
-  if (investing > 50) {
-    levers.push({
-      name: 'Pause the taxable investing',
-      monthly: investing,
-      kind: 'immediate',
-      note: 'Not a spending cut — this is money moved to Wealthfront and Fundrise. In a '
-        + 'deficit it is not saving, it is recycling the house proceeds. The pension, both '
-        + '403(b)s and the HSA are untouched by this and keep running.',
+  // Two different kinds of move, and conflating them is how the first version of
+  // this model went wrong. Stopping a savings transfer keeps cash in the account
+  // but does nothing to the operating gap — it buys time. Only spending cuts (or
+  // more income) actually close it.
+  const timeBuyers = [];
+  if (savingsNow > 25) {
+    timeBuyers.push({
+      name: 'Stop the remaining standing transfers',
+      monthly: savingsNow,
+      note: `Down from ${money(savingsTrailing)}/mo over the last year — most of that `
+        + 'reduction has already been made. What is left keeps cash in the account but does '
+        + 'not narrow the gap between income and spending.',
     });
   }
 
+  const levers = [];
   for (const c of catRollup) {
     const f = FLEXIBILITY[c.name];
     if (!f || f.flex <= 0) continue;
-    const monthly = round(c.avgMonth * f.flex);
-    if (monthly < 25) continue;
+    const value = round(c.avgMonth * f.flex);
+    if (value < 25) continue;
     levers.push({
       name: `Trim ${c.name} by ${Math.round(f.flex * 100)}%`,
-      monthly,
-      kind: 'behavioural',
+      monthly: value,
+      kind: 'spending',
       from: round(c.avgMonth),
       to: round(c.avgMonth * (1 - f.flex)),
       note: f.note,
     });
   }
-
   levers.sort((a, b) => b.monthly - a.monthly);
 
-  // How far down the list you have to go to close the gap.
   let running = 0;
   for (const l of levers) {
     running += l.monthly;
     l.cumulative = round(running);
-    l.closesGap = running >= gap;
+    l.closesGap = running >= gapNow;
   }
+  const maxTrim = round(running);
   const enough = levers.findIndex((l) => l.closesGap);
 
-  // Charges that recur and could simply stop.
+  // The honest bottom line: trim everything that can plausibly be trimmed, and
+  // see what is left.
+  const afterMaxTrimNow = round(scenarios[0].surplus + maxTrim);
+  const afterMaxTrimLater = round(scenarios[2].surplus + maxTrim);
+
+  // How long the liquid assets absorb the shortfall if nothing changes.
+  const burn = Math.max(1, -scenarios[0].netCash);
+  const runwayMonths = round(H.cashAvailable / burn, 1);
+  const runwayWithInvestments = round((H.cashAvailable + H.investTotal) / burn, 1);
+
   const cuttable = (payload.recurring ?? [])
     .filter((r) => r.status === 'active' && r.kind === 'fixed')
     .filter((r) => !/utilit|electric|gas|water|trash|internet|insurance|liberty|aps|parks|centurylink|starlink/i
@@ -153,6 +199,7 @@ export function affordability(config, payload, transactions, catRollup) {
 
   return {
     baseline,
+    setupMonthly,
     oldHousingMonthly,
     housingNow,
     housingLater,
@@ -161,11 +208,21 @@ export function affordability(config, payload, transactions, catRollup) {
     takeHome,
     withholdingShortfall,
     sustainableIncome,
+    savingsNow,
+    savingsTrailing,
+    savingsReduced: round(savingsTrailing - savingsNow),
     scenarios,
     gap,
+    gapNow,
+    timeBuyers,
     levers,
+    maxTrim,
     leversNeeded: enough === -1 ? levers.length : enough + 1,
     coverable: enough !== -1,
+    afterMaxTrimNow,
+    afterMaxTrimLater,
+    runwayMonths,
+    runwayWithInvestments,
     cuttable,
     cuttableAnnual: round(cuttable.reduce((s, r) => s + r.annual, 0)),
     categories: [...byCategory.entries()]
@@ -173,7 +230,10 @@ export function affordability(config, payload, transactions, catRollup) {
         name,
         monthly: round(total / 12),
         flex: FLEXIBILITY[name]?.flex ?? 0,
+        trimmable: round((total / 12) * (FLEXIBILITY[name]?.flex ?? 0)),
       }))
       .sort((a, b) => b.monthly - a.monthly),
   };
 }
+
+const money = (n) => `$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;

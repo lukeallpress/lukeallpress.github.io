@@ -64,37 +64,50 @@ export function buildRunsheet(p) {
     w('## Can we carry the house?');
     w();
     w(nowS.surplus < 0
-      ? `**Not on current spending. Short about ${money(Math.abs(nowS.surplus))} a month`
-        + `, rising to ${money(Math.abs(endS.surplus))} by late 2027.**`
+      ? `**Not on income alone. The operating gap is about ${money(Math.abs(nowS.surplus))} a `
+        + `month, widening to ${money(Math.abs(endS.surplus))} by late 2027.**`
       : `**Yes — about ${money(nowS.surplus)} a month spare on current spending.**`);
     w();
     w(`Housing went from ${money(A.oldHousingMonthly)} a month to ${money(A.housingNow)} and `
       + `nothing else changed. Take-home is ${money(A.takeHome)}, but `
-      + `${money(A.withholdingShortfall)} of that is tax being owed and not withheld, so the `
-      + `figure to plan against is ${money(A.sustainableIncome)}.`);
+      + `${money(A.withholdingShortfall)} of that is tax owed and not withheld, so the figure to `
+      + `plan against is ${money(A.sustainableIncome)}.`);
     w();
-    w(table(['', 'Housing', 'Everything else', 'Income', 'Left over'],
-      A.scenarios.map((sc) => [sc.label, money(sc.housing), money(sc.baseline),
-        money(sc.income), money(sc.surplus)]), ['l', 'r', 'r', 'r', 'r']));
+    w(table(['', 'Per month'], [
+      ['Spendable income', money(A.sustainableIncome)],
+      ['Housing', money(-nowS.housing)],
+      ['Everything else', money(-A.baseline)],
+      ['**Operating gap**', `**${money(nowS.surplus)}**`],
+      ['Standing savings transfers', money(-A.savingsNow)],
+      ['**Net cash each month**', `**${money(nowS.netCash)}**`],
+    ], ['l', 'r']));
     w();
-    w(`Closing a ${money(A.gap)}/mo gap — the late-2027 figure, since both increases are `
-      + `already scheduled:`);
+    w(`### Two different kinds of move`);
+    w();
+    w(`Standing transfers are down from ${money(A.savingsTrailing)}/mo to ${money(A.savingsNow)}/mo `
+      + `— Wealthfront cash stopped, the index fund to $100, the 529s from $450 to $150. That is `
+      + `**${money(A.savingsReduced)}/mo** of real cash relief and it is why the account drains `
+      + `slower. But it does not narrow the operating gap, because that gap was measured before `
+      + `any saving. Money not invested is money kept, not money earned.`);
+    w();
+    w(`Trimming every category that can plausibly move is worth about **${money(A.maxTrim)}/mo**:`);
     w();
     w(table(['Move', 'Worth', 'Running'],
-      A.levers.slice(0, Math.max(A.leversNeeded + 2, 5)).map((l, i) => [
-        `${i < A.leversNeeded ? '**' : ''}${l.name}${i < A.leversNeeded ? '**' : ''}`,
-        `${money(l.monthly)}/mo`,
-        `${money(l.cumulative)}/mo`,
-      ]), ['l', 'r', 'r']));
+      A.levers.slice(0, 6).map((l) => [l.name, `${money(l.monthly)}/mo`, `${money(l.cumulative)}/mo`]),
+      ['l', 'r', 'r']));
     w();
-    w(`The first **${A.leversNeeded}** get there. Pausing the taxable investing is the largest `
-      + `single move and the least painful — in a deficit that money is not saving, it is the `
-      + `house proceeds being recycled. The pension, both 403(b)s and the HSA are untouched by `
-      + `it and keep running.`);
+    w(`That leaves **${money(Math.abs(A.afterMaxTrimNow))}/mo** still short today and `
+      + `**${money(Math.abs(A.afterMaxTrimLater))}/mo** once both housing increases land. `
+      + `Trimming alone does not close it. What does: more income, a lower payment, or accepting `
+      + `that the house is funded partly by the proceeds of the last one.`);
+    w();
+    w(`Nobody is in danger. At the current burn the spendable cash lasts **${A.runwayMonths} `
+      + `months**, and with investments behind it, years. The question is not solvency — it is `
+      + `whether the windfall is meant to be spent this way.`);
     w();
     w(`Fixed recurring charges that could simply stop, excluding utilities and insurance, run `
       + `**${money(A.cuttableAnnual)} a year** (${money(A.cuttableAnnual / 12)}/mo) across `
-      + `${A.cuttable.length} commitments. The dashboard lists them.`);
+      + `${A.cuttable.length} commitments. The Committed monthly page lists every one.`);
     w();
     w('---');
     w();

@@ -540,6 +540,27 @@
         .lever-cum { display: none; }
       }
 
+      /* ═══ Commitments ══════════════════════════════════════════════════ */
+      .commit-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+      .commit-card { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--sn); border-radius: var(--radius); padding: 0.85rem 0.95rem; }
+      .commit-card--none { border-top-color: var(--ink-3); }
+      .commit-card--low { border-top-color: var(--serious); }
+      .commit-card--high { border-top-color: var(--good); }
+      .commit-card-label { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+      .commit-card-value { font-family: var(--serif); font-size: 1.5rem; margin: 0.2rem 0 0.15rem; font-variant-numeric: tabular-nums; }
+      .commit-card-value span { font-family: var(--sans); font-size: 0.42em; color: var(--ink-3); }
+      .commit-card-sub { font-size: 0.75rem; color: var(--ink-3); }
+      .commit-card-flex { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.4rem; color: var(--ink-2); }
+      .commit-group { margin-bottom: 1.75rem; }
+      .commit-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+      .commit-head h3 { font-size: 1.1rem; }
+      .commit-head p { font-size: 0.82rem; max-width: 60ch; }
+      .commit-total { font-family: var(--serif); font-size: 1.35rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .commit-total span { font-family: var(--sans); font-size: 0.44em; color: var(--ink-3); }
+      .mini-list--inline { display: flex; flex-wrap: wrap; gap: 0.15rem 1.5rem; margin: 0.4rem 0 0.5rem; }
+      .mini-list--inline li { border-bottom: 0; gap: 0.4rem; }
+      .spark-cell { width: 110px; padding-top: 0.55rem !important; }
+
       /* ═══ Paycheck ═════════════════════════════════════════════════════ */
       .stub { margin-bottom: 1.5rem; }
       .stub-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.6rem; }

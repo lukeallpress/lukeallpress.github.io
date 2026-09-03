@@ -23,6 +23,7 @@ import {
 import { encryptPayload, verifyPayload } from './finance/crypt.mjs';
 import { buildRunsheet } from './finance/runsheet.mjs';
 import { affordability } from './finance/affordability.mjs';
+import { commitments } from './finance/commitments.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SRC = path.join(ROOT, 'finance-private');
@@ -488,6 +489,7 @@ const payload = {
   ledger: { dict, rows: ledger },
 };
 
+payload.commitments = commitments(config, payload, transactions);
 payload.affordability = affordability(config, payload, transactions, cats12);
 
 // ── Encrypt & write ─────────────────────────────────────────────────────────
@@ -567,7 +569,10 @@ console.log(`
   verified       decrypts with the passphrase given (${verified.meta.txCount.toLocaleString()} rows read back)
 
   affordability  $${payload.affordability.sustainableIncome.toLocaleString()} in · $${payload.affordability.housingNow.toLocaleString()} housing · $${payload.affordability.baseline.toLocaleString()} everything else
-                 surplus today $${payload.affordability.scenarios[0].surplus.toLocaleString()} · late 2027 $${payload.affordability.scenarios[2].surplus.toLocaleString()}
+                 operating gap today $${payload.affordability.scenarios[0].surplus.toLocaleString()} · late 2027 $${payload.affordability.scenarios[2].surplus.toLocaleString()}
+                 standing transfers $${payload.affordability.savingsNow.toLocaleString()}/mo (was $${payload.affordability.savingsTrailing.toLocaleString()})
+                 max realistic trim $${payload.affordability.maxTrim.toLocaleString()} → still $${payload.affordability.afterMaxTrimNow.toLocaleString()} today, $${payload.affordability.afterMaxTrimLater.toLocaleString()} in late 2027
+  commitments    $${payload.commitments.total.toLocaleString()}/mo committed · $${payload.commitments.stoppable.toLocaleString()}/mo stoppable
 
   net worth      $${payload.headline.netWorth.toLocaleString()}
   liquid         $${payload.headline.liquid.toLocaleString()}

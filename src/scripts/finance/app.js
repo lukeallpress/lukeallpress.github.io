@@ -133,6 +133,124 @@ const delta = (n, invert = false) => {
 };
 
 
+
+// ═══ VIEW: Commitments ══════════════════════════════════════════════════════
+
+function viewCommitments() {
+  const root = document.createElement('div');
+  const C = D.commitments;
+  const A = D.affordability;
+
+  root.append(h(`<div class="view-intro">
+    <h2>Committed each month</h2>
+    <p>Everything that leaves by standing instruction rather than by decision, grouped by
+    how easily it could stop. ${money(C.total)} a month — ${pct(C.takeHomeShare)} of
+    take-home — of which <b>${money(C.stoppable)}</b> could be stopped this afternoon.</p>
+  </div>`));
+
+  // What the recent changes were worth.
+  if (C.changed?.length) {
+    const rows = C.changed.map((x) =>
+      `<li><span>${esc(x.name)}</span><b>${money(x.was)} → ${money(x.monthly)}</b></li>`).join('');
+    root.append(h(`<div class="alert alert--sum">
+      <div class="alert-when">Already done</div>
+      <div>
+        <h4>${money(C.alreadySaved)}/mo of standing transfers stopped or reduced</h4>
+        <ul class="mini-list mini-list--inline">${rows}</ul>
+        <p>Confirmed against the ledger. Real cash relief — though it slows the drain rather
+        than closing the gap, since the operating shortfall was measured before any saving.</p>
+      </div>
+    </div>`));
+  }
+
+  // Group totals at a glance.
+  const bar = h('<section class="commit-summary"></section>');
+  for (const g of C.groups) {
+    bar.append(h(`<div class="commit-card commit-card--${g.flexibility}">
+      <div class="commit-card-label">${esc(g.title)}</div>
+      <div class="commit-card-value">${money(g.monthly)}<span>/mo</span></div>
+      <div class="commit-card-sub">${money(g.annual)} a year · ${g.items.length} item${g.items.length === 1 ? '' : 's'}</div>
+      <div class="commit-card-flex">${g.flexibility === 'none' ? 'Fixed'
+    : g.flexibility === 'low' ? 'Hard to move' : 'Stoppable'}</div>
+    </div>`));
+  }
+  root.append(bar);
+
+  // Every line, reviewable.
+  for (const g of C.groups) {
+    if (!g.items.length) continue;
+    const sec = h(`<section class="commit-group">
+      <div class="commit-head">
+        <div>
+          <h3>${esc(g.title)}</h3>
+          <p class="muted">${esc(g.subtitle)}</p>
+        </div>
+        <div class="commit-total">${money(g.monthly)}<span>/mo</span></div>
+      </div>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>What</th><th class="num">Per month</th><th class="num">Per year</th>
+        <th>Cadence</th><th>Source</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+    </section>`);
+    const tb = sec.querySelector('tbody');
+    for (const it of [...g.items].sort((a, b) => b.monthly - a.monthly)) {
+      const flags = [];
+      if (it.locked) flags.push('<span class="pill">fixed</span>');
+      if (it.cutCandidate) flags.push('<span class="pill pill--quoted">cut candidate</span>');
+      if (it.verify) flags.push('<span class="pill pill--warn">verify</span>');
+      if (it.status === 'stopped') flags.push('<span class="pill pill--done">stopped</span>');
+      if (it.status === 'reduced') flags.push('<span class="pill pill--done">reduced</span>');
+      if (it.priceChange) flags.push(`<span class="pill pill--warn">up ${money2(it.priceChange)}</span>`);
+      tb.append(h(`<tr${it.monthly === 0 ? ' class="row-zero"' : ''}>
+        <td>${esc(it.name)} ${flags.join(' ')}</td>
+        <td class="num">${money2(it.monthly)}</td>
+        <td class="num">${money(it.monthly * 12)}</td>
+        <td class="muted">${esc(it.cadence ?? (it.perPeriod ? `${money2(it.perPeriod)}/cheque` : 'Monthly'))}</td>
+        <td class="muted">${esc(it.source ?? '')}</td>
+        <td class="muted">${esc(it.note ?? (it.range ? `ranges ${money(it.range[0])}–${money(it.range[1])}` : ''))}</td>
+      </tr>`));
+    }
+    root.append(sec);
+  }
+
+  // ── Averages by category ────────────────────────────────────────────────
+  root.append(h('<h3 class="section-head">Averages by category</h3>'));
+  root.append(h(`<p class="lede">Trailing twelve months to ${monthLong(D.meta.t12[11])}, excluding
+    housing and the one-off move-in spending. <b>${money(A.baseline)}/mo</b> in total. The
+    trimmable column is what a realistic cut would yield, not a target.</p>`));
+
+  const cats = A.categories.filter((c) => c.monthly >= 5);
+  const catTable = h(`<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Category</th><th class="num">Per month</th><th class="num">Per year</th>
+    <th class="num">Share</th><th>Trend</th><th class="num">Trimmable</th></tr></thead>
+    <tbody></tbody></table></div>`);
+  const ctb = catTable.querySelector('tbody');
+  const byName = new Map(D.categories.t12.map((c) => [c.name, c]));
+  for (const c of cats) {
+    const full = byName.get(c.name);
+    const cell = document.createElement('td');
+    if (full) cell.append(sparkline(full.series, { color: catColor(c.name) }));
+    const row = h(`<tr>
+      <td><span class="cell-dot c-${catColor(c.name)}"></span>${esc(c.name)}</td>
+      <td class="num"><b>${money(c.monthly)}</b></td>
+      <td class="num">${money(c.monthly * 12)}</td>
+      <td class="num muted">${pct((c.monthly / A.baseline) * 100, 0)}</td>
+      <td class="spark-cell"></td>
+      <td class="num ${c.trimmable > 0 ? 'pos' : 'muted'}">${c.trimmable > 0 ? money(c.trimmable) : '—'}</td>
+    </tr>`);
+    row.querySelector('.spark-cell').replaceWith(cell);
+    cell.className = 'spark-cell';
+    ctb.append(row);
+  }
+  ctb.append(h(`<tr class="tr-total"><td><b>Total</b></td>
+    <td class="num"><b>${money(A.baseline)}</b></td>
+    <td class="num"><b>${money(A.baseline * 12)}</b></td>
+    <td class="num"></td><td></td>
+    <td class="num"><b>${money(A.maxTrim)}</b></td></tr>`));
+  root.append(catTable);
+
+  return root;
+}
+
 // ═══ VIEW: Affordability ════════════════════════════════════════════════════
 
 function viewAffordability() {
@@ -154,11 +272,13 @@ function viewAffordability() {
   root.append(h(`<section class="verdict verdict--${short ? 'short' : 'ok'}">
     <div class="verdict-num">${money(Math.abs(now.surplus))}<span>/mo</span></div>
     <div class="verdict-body">
-      <h3>${short ? 'short, at the current payment' : 'left over each month'}</h3>
+      <h3>${short ? 'short, before any saving' : 'left over each month'}</h3>
       <p>${short
-    ? `Take-home covers the mortgage and about ${money(A.baseline)} of everything else, `
-      + `but the two together come to ${money(A.baseline + now.housing)}. The shortfall grows to `
-      + `${money(Math.abs(end.surplus))}/mo once the buydown expires and escrow catches up.`
+    ? `Income covers the mortgage and about ${money(A.baseline)} of ordinary living, but the `
+      + `two come to ${money(A.baseline + now.housing)}. This is the operating gap — what has to `
+      + `close for the house to be carried on income rather than on the proceeds of selling the `
+      + `last one. It widens to ${money(Math.abs(end.surplus))}/mo once the buydown expires and `
+      + `escrow catches up.`
     : 'Income covers the mortgage and current spending with room to spare.'}</p>
     </div>
   </section>`));
@@ -179,57 +299,54 @@ function viewAffordability() {
       <div class="stat-sub">After ${money(A.withholdingShortfall)}/mo of tax that is owed but not being withheld</div></div>
   </section>`));
 
-  // The three scenarios.
-  root.append(h('<h3 class="section-head">How it changes</h3>'));
-  root.append(figure(
-    'Income against housing and everything else',
-    'Baseline spending is held flat across all three — this shows only what the housing '
-    + 'cost does on its own.',
-    (plot, leg) => {
-      stackedChart(plot, {
-        labels: A.scenarios.map((s) => s.label),
-        height: 240,
-        xEvery: 1,
-        series: [
-          { name: 'Housing', values: A.scenarios.map((s) => s.housing), color: 's2' },
-          { name: 'Everything else', values: A.scenarios.map((s) => s.baseline), color: 's4' },
-        ],
-        yFmt: compact,
-        tipFmt: money,
-      });
-      legend(leg, [
-        { name: 'Housing', color: 's2' },
-        { name: 'Everything else', color: 's4' },
-      ]);
-    },
-    () => chartTable(['', 'Housing', 'Everything else', 'Total out', 'Income', 'Surplus'],
-      A.scenarios.map((s) => [s.label, money(s.housing), money(s.baseline),
-        money(s.housing + s.baseline), money(s.income), money(s.surplus)])),
-  ));
-
-  const rows = h('<div class="table-wrap"><table class="data-table"><thead><tr><th>When</th>'
-    + '<th class="num">Housing</th><th class="num">Everything else</th><th class="num">Income</th>'
-    + '<th class="num">Left over</th><th>Why</th></tr></thead><tbody></tbody></table></div>');
-  const tb = rows.querySelector('tbody');
-  for (const s of A.scenarios) {
-    tb.append(h(`<tr>
-      <td><b>${esc(s.label)}</b></td>
-      <td class="num">${money(s.housing)}</td>
-      <td class="num">${money(s.baseline)}</td>
-      <td class="num">${money(s.income)}</td>
-      <td class="num ${s.surplus < 0 ? 'neg' : 'pos'}"><b>${money(s.surplus)}</b></td>
-      <td class="muted">${esc(s.note)}</td>
+  // The cash-flow statement, in order, so the two lines never get conflated.
+  root.append(h('<h3 class="section-head">Where it goes, in order</h3>'));
+  const flow = [
+    ['Take-home pay', A.takeHome, 'in'],
+    ['Tax owed but not withheld', -A.withholdingShortfall, 'out',
+      'Olivia\'s cheque withholds no federal tax'],
+    ['Spendable income', A.sustainableIncome, 'sub'],
+    ['Housing', -now.housing, 'out', 'Principal, interest and escrow'],
+    ['Everything else', -A.baseline, 'out',
+      `Measured over the last year, less ${money(A.setupMonthly)}/mo of move-in spending that will not repeat`],
+    ['Operating gap', now.surplus, 'total'],
+    ['Standing savings transfers', -A.savingsNow, 'out',
+      `Down from ${money(A.savingsTrailing)}/mo — the reductions you have already made`],
+    ['Net cash each month', now.netCash, 'total'],
+  ];
+  const ft = h('<div class="table-wrap"><table class="data-table"><thead><tr><th></th>'
+    + '<th class="num">Per month</th><th>Note</th></tr></thead><tbody></tbody></table></div>');
+  const ftb = ft.querySelector('tbody');
+  for (const [label, val, kind, note] of flow) {
+    ftb.append(h(`<tr class="${kind === 'total' ? 'tr-total' : kind === 'sub' ? 'tr-rule' : ''}">
+      <td>${kind === 'total' || kind === 'sub' ? `<b>${esc(label)}</b>` : esc(label)}</td>
+      <td class="num ${val < 0 && kind !== 'out' ? 'neg' : val > 0 && kind === 'total' ? 'pos' : ''}">
+        ${kind === 'total' || kind === 'sub' ? `<b>${money(val)}</b>` : money(val)}</td>
+      <td class="muted">${esc(note ?? '')}</td>
     </tr>`));
   }
-  root.append(rows);
+  root.append(ft);
 
-  // Closing the gap.
-  root.append(h('<h3 class="section-head">Closing the gap</h3>'));
-  root.append(h(`<p class="lede">The shortfall to plan for is
-    <b>${money(A.gap)}/mo</b> — the late-2027 figure, since both increases are already
-    scheduled. Ordered by how much each move is worth, ${A.coverable
-    ? `the first <b>${A.leversNeeded}</b> get there.`
-    : 'the whole list does not quite get there on its own.'}</p>`));
+  // Two kinds of move, kept apart.
+  root.append(h('<h3 class="section-head">What actually closes it</h3>'));
+  root.append(h(`<div class="alert alert--sum">
+    <div class="alert-when">The distinction</div>
+    <div>
+      <h4>Stopping a transfer buys time. Only spending or income closes the gap.</h4>
+      <p>You have already cut standing transfers from ${money(A.savingsTrailing)}/mo to
+      ${money(A.savingsNow)}/mo — Wealthfront cash stopped, the index fund down to $100, the 529s
+      from $450 to $150. That is <b>${money(A.savingsReduced)}/mo</b> of real cash relief and it
+      is why the account is draining slower. But none of it narrows the
+      ${money(Math.abs(now.surplus))}/mo operating gap, because that gap was measured before any
+      saving. Money not invested is money kept, not money earned.</p>
+    </div>
+  </div>`));
+
+  root.append(h(`<p class="lede">Trimming every category that can plausibly move is worth about
+    <b>${money(A.maxTrim)}/mo</b>. That leaves <b>${money(Math.abs(A.afterMaxTrimNow))}/mo</b>
+    still short today, and <b>${money(Math.abs(A.afterMaxTrimLater))}/mo</b> once both housing
+    increases land. Trimming alone does not get there — this is worth knowing early rather than
+    after a year of trying.</p>`));
 
   const levers = h('<div class="lever-list"></div>');
   A.levers.forEach((l, i) => {
@@ -246,6 +363,19 @@ function viewAffordability() {
       </div>`));
   });
   root.append(levers);
+
+  // How long the buffer lasts if nothing else changes.
+  root.append(h(`<section class="stat-grid stat-grid--3">
+    <div class="stat"><div class="stat-label">Net cash burn</div>
+      <div class="stat-value">${money(Math.abs(now.netCash))}<span style="font-size:0.5em">/mo</span></div>
+      <div class="stat-sub">At today's payment and today's transfers</div></div>
+    <div class="stat ${A.runwayMonths < 24 ? 'stat--warn' : ''}"><div class="stat-label">Spendable cash lasts</div>
+      <div class="stat-value">${A.runwayMonths} mo</div>
+      <div class="stat-sub">${money(D.headline.cashAvailable)} available, before touching investments</div></div>
+    <div class="stat"><div class="stat-label">With investments too</div>
+      <div class="stat-value">${Math.round(A.runwayWithInvestments / 12)} yr</div>
+      <div class="stat-sub">Solvent for a long time — but this is the windfall being spent, not income covering costs</div></div>
+  </section>`));
 
   // Recurring charges that could simply stop.
   if (A.cuttable.length) {
@@ -1466,6 +1596,7 @@ function viewTransactions() {
 
 const VIEWS = {
   affordability: { label: 'Can we afford it?', render: viewAffordability },
+  commitments: { label: 'Committed monthly', render: viewCommitments },
   overview: { label: 'Overview', render: viewOverview },
   cashflow: { label: 'Cash flow', render: viewCashflow },
   paycheck: { label: 'Paycheck', render: viewPaycheck },
