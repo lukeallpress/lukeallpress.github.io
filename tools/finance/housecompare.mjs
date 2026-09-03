@@ -2,16 +2,19 @@
  * Old house against new, line by line.
  *
  * The headline everyone reaches for is the mortgage, but the mortgage is only
- * part of what changed. Two things move in the household's favour — the HOA is
- * gone and the solar loan was cleared at the sale — and several move sharply
- * against it. The largest of those is not the payment at all: electricity went
- * from $93 a month to over $400.
+ * part of what changed, and the second-largest line is easy to read wrong.
  *
- * A caveat carried in the output rather than buried here: the new-house window
- * is short and it is July and August in Phoenix. Those are the two worst months
- * of the year for a bill that runs an air conditioner and a pool pump, so the
- * measured figure is a summer peak, not an annual average. It is shown as
- * measured, flagged as peak, and the annual estimate is derived separately.
+ * Electricity went from $92 a month to $389. That looks like the new house
+ * being expensive, and partly it is — it is bigger and it has a pool pump. But
+ * the old house had solar panels, and the $250/mo loan paying for them sits in
+ * a different row entirely. Compared honestly, the old address cost $342 a
+ * month for energy and the new one costs less than that once the summer peak is
+ * taken out. The two rows are paired here so they cannot be read separately.
+ *
+ * The other caveat is carried in the output rather than buried: the new-house
+ * window is seven weeks of Phoenix July and August, the worst possible sample
+ * for a bill dominated by air conditioning. The measured figure is a summer
+ * peak, flagged as one, with the annual estimate derived separately.
  */
 
 const round = (n, p = 0) => Math.round(n * 10 ** p) / 10 ** p;
@@ -30,10 +33,15 @@ const LINES = [
   { key: 'pi', label: 'Mortgage — principal & interest', kind: 'housing' },
   { key: 'escrow', label: 'Mortgage — escrow', kind: 'housing' },
   { key: 'hoa', label: 'HOA dues', kind: 'housing', match: /solare ranch/i },
-  { key: 'solar', label: 'Solar panel loan', kind: 'debt', match: /tech cu/i },
+  // Paired: the old house's electricity bill was low *because* of the panels the
+  // solar loan was buying. Reading either row alone gives the wrong answer.
   {
-    key: 'electric', label: 'Electricity', kind: 'utility', match: /aps electric/i,
-    seasonal: true,
+    key: 'solar', label: 'Solar panel loan', kind: 'energy', match: /tech cu/i,
+    pairedWith: 'electric',
+  },
+  {
+    key: 'electric', label: 'Electricity', kind: 'energy', match: /aps electric/i,
+    seasonal: true, pairedWith: 'solar',
   },
   { key: 'gas', label: 'Gas', kind: 'utility', match: /southwest gas/i },
   { key: 'water', label: 'Water and sewer', kind: 'utility', match: /valley utilities|liberty utilitie|epcor/i },
@@ -184,6 +192,22 @@ export function houseCompare(config, payload, transactions) {
     (s, r) => s + (r.annualised ?? r.after), 0,
   ));
 
+  // Energy, read as one thing.
+  const energyRows = rows.filter((r) => r.kind === 'energy');
+  const energy = energyRows.length ? {
+    rows: energyRows.map((r) => r.key),
+    before: round(energyRows.reduce((s2, r) => s2 + r.before, 0)),
+    after: round(energyRows.reduce((s2, r) => s2 + r.after, 0)),
+    afterAnnualised: round(energyRows.reduce((s2, r) => s2 + (r.annualised ?? r.after), 0)),
+    note: 'The old house had solar panels and a $250/mo loan paying for them. Its low '
+      + 'electricity bill and that loan are the same fact, so they are added together here. '
+      + 'The new house has no panels and no loan.',
+  } : null;
+  if (energy) {
+    energy.change = round(energy.after - energy.before);
+    energy.changeAnnualised = round(energy.afterAnnualised - energy.before);
+  }
+
   const worse = rows.filter((r) => r.change > 0).sort((a, b) => b.change - a.change);
   const better = rows.filter((r) => r.change < 0).sort((a, b) => a.change - b.change);
 
@@ -202,6 +226,7 @@ export function houseCompare(config, payload, transactions) {
     totalAfterAnnualised,
     change: round(totalAfter - totalBefore),
     changeAnnualised: round(totalAfterAnnualised - totalBefore),
+    energy,
     biggestSurprise: worse.find((r) => r.kind === 'utility') ?? worse[0] ?? null,
   };
 }

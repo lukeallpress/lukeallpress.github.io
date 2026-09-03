@@ -162,6 +162,7 @@ function renderSidebar() {
   }).join('');
 
   const electric = H.rows.find((r) => r.key === 'electric');
+  const E = H.energy;
 
   host.innerHTML = `
     <div class="side-card">
@@ -178,12 +179,29 @@ function renderSidebar() {
 
       <div class="side-rows">${rows}</div>
 
+      ${E ? `<div class="side-pair">
+        <div class="side-pair-head">Energy, read together</div>
+        <p>The old house had solar panels and the ${money(250)}/mo loan buying them. Its cheap
+        power and that loan are the same fact, so read on its own the electricity row is
+        misleading.</p>
+        <div class="side-row">
+          <span class="side-row-name">Power + solar loan</span>
+          <span class="side-row-vals">${money(E.before)} → ${money(E.after)}</span>
+          <span class="side-row-delta ${E.change > 0 ? 'up' : 'down'}">${E.change > 0 ? '+' : '−'}${money(Math.abs(E.change))}</span>
+        </div>
+        <div class="side-row">
+          <span class="side-row-name">Same, off peak summer</span>
+          <span class="side-row-vals">${money(E.before)} → ${money(E.afterAnnualised)}</span>
+          <span class="side-row-delta ${E.changeAnnualised > 0 ? 'up' : 'down'}">${E.changeAnnualised > 0 ? '+' : '−'}${money(Math.abs(E.changeAnnualised))}</span>
+        </div>
+      </div>` : ''}
+
       <p class="side-note">
-        ${money(H.totalBefore)} → ${money(H.totalAfter)} a month.
+        ${money(H.totalBefore)} → ${money(H.totalAfter)} a month as measured.
         ${electric?.annualised
-    ? `Electricity is measured across ${H.newWindow.months} months of Phoenix summer — the worst
-       of the year for a house with air conditioning and a pool pump. Over a full year it is
-       nearer ${money(electric.annualised)}, which puts the true increase closer to
+    ? `Electricity is sampled across ${H.newWindow.months} months of Phoenix summer, the worst of
+       the year for air conditioning and a pool pump. Over a full year it is nearer
+       ${money(electric.annualised)}, putting the real increase at
        <b>${money(H.changeAnnualised)}</b>.` : ''}
       </p>
     </div>`;
@@ -1551,6 +1569,19 @@ function viewHouse() {
         </tr>`));
       }
       root.append(sec);
+    }
+
+    if (MC.outstanding?.length) {
+      root.append(h(`<div class="alert alert--serious">
+        <div class="alert-when">Still owed</div>
+        <div>
+          <h4>${money(MC.outstandingTotal)} of work is billed in stages and not finished paying</h4>
+          <p>${MC.outstanding.map((x) => `<b>${esc(x.name)}</b> — ${money(x.cost)} total,
+            ${money(x.paid.total)} paid across ${x.paid.count} payment${x.paid.count === 1 ? '' : 's'},
+            <b>${money(x.remaining)} still due</b>`).join('. ')}. These are not overruns; they are
+          balances. Worth knowing they are coming.</p>
+        </div>
+      </div>`));
     }
 
     if (MC.variances.length) {

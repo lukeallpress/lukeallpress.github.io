@@ -75,7 +75,8 @@ const LEDGER_HINTS = [
   { test: /cash to close/i, match: /wells fargo na\/ a\/c: dhi ti/i, specificity: 10 },
   { test: /earnest/i, match: /online domestic wire transfer/i, specificity: 9 },
   { test: /appraisal/i, match: /appraisal/i, specificity: 9 },
-  { test: /closet/i, match: /closets by design/i, specificity: 9 },
+  { test: /closet/i, match: /closets by design/i, specificity: 9, staged: true },
+  { test: /cabinet/i, match: /pedro/i, specificity: 9, staged: true },
   { test: /^movers$/i, match: /movinghelp/i, specificity: 8 },
   { test: /movers tips/i, match: /gramz moving/i, specificity: 8 },
   { test: /uhaul|u-haul/i, match: /u-haul/i, specificity: 8 },
@@ -150,9 +151,20 @@ export function moveCosts(csvPath, config, transactions) {
       count: matched.length,
       last: matched[matched.length - 1].date,
     };
-    item.variance = item.cost != null ? round(item.paid.total - item.cost) : null;
+    // A job billed in stages is not over budget or under it — part of it simply
+    // has not been invoiced yet. The closet and the cabinets are both deposits
+    // against a larger total, so the useful number is the balance, not a variance.
+    if (item.hint.staged && item.cost != null && item.paid.total < item.cost) {
+      item.remaining = round(item.cost - item.paid.total);
+      item.staged = true;
+      item.variance = null;
+    } else {
+      item.variance = item.cost != null ? round(item.paid.total - item.cost) : null;
+    }
   }
   for (const item of items) delete item.hint;
+
+  const outstanding = items.filter((x) => x.remaining > 0);
 
   const groups = BUCKETS.map((b) => {
     const mine = items.filter((x) => x.bucket === b.key);
@@ -182,6 +194,9 @@ export function moveCosts(csvPath, config, transactions) {
     estimates,
     estimatedValue: round(estimates.reduce((s, x) => s + (x.cost ?? 0), 0)),
     matched: items.filter((x) => x.paid),
+    outstanding,
+    outstandingTotal: round(outstanding.reduce((s, x) => s + x.remaining, 0)),
+    paidTotal: round(items.reduce((s, x) => s + (x.paid?.total ?? 0), 0)),
     variances: items
       .filter((x) => x.variance != null && Math.abs(x.variance) >= 100)
       .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance)),
