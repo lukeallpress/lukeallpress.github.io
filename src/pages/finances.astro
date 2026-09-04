@@ -581,6 +581,25 @@
         .lever-cum { display: none; }
       }
 
+      /* ═══ Proposal box ═════════════════════════════════════════════════ */
+      .proposal { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); border-radius: 14px; padding: 1.2rem 1.35rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
+      .proposal--later { border-left-color: var(--ink-3); box-shadow: none; }
+      .proposal-step { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 560; margin-bottom: 0.2rem; }
+      .proposal--later .proposal-step { color: var(--ink-3); }
+      .proposal-head h3 { font-size: 1.2rem; margin-bottom: 0.9rem; max-width: 62ch; }
+      .proposal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+      .proposal-fig { background: var(--surface-2); border-radius: var(--radius); padding: 0.7rem 0.85rem; }
+      .proposal-fig--good { background: color-mix(in srgb, var(--good) 10%, var(--surface-2)); }
+      .proposal-fig-label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+      .proposal-fig-value { display: block; font-family: var(--serif); font-size: 1.6rem; line-height: 1.1; margin: 0.15rem 0 0.1rem; font-variant-numeric: tabular-nums; }
+      .proposal-fig-value small { font-family: var(--sans); font-size: 0.42em; color: var(--ink-3); }
+      .proposal-fig--good .proposal-fig-value { color: var(--pos); }
+      .proposal-fig-sub { display: block; font-size: 0.75rem; color: var(--ink-3); }
+      .proposal-note { font-size: 0.87rem; color: var(--ink-2); max-width: 76ch; margin-bottom: 0.6rem; }
+      .proposal-note:last-child { margin-bottom: 0; }
+      .proposal-verify { font-size: 0.8rem; color: var(--ink-3); border-top: 1px solid var(--line-2); padding-top: 0.6rem; }
+      .tr-highlight td { background: color-mix(in srgb, var(--good) 9%, transparent); }
+
       /* ═══ Commitments ══════════════════════════════════════════════════ */
       .commit-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
       .commit-card { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--sn); border-radius: var(--radius); padding: 0.85rem 0.95rem; }

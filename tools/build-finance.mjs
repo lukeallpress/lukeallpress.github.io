@@ -25,6 +25,7 @@ import { buildRunsheet } from './finance/runsheet.mjs';
 import { affordability } from './finance/affordability.mjs';
 import { commitments } from './finance/commitments.mjs';
 import { houseCompare } from './finance/housecompare.mjs';
+import { refinance } from './finance/refinance.mjs';
 import { moveCosts } from './finance/movecosts.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -495,6 +496,7 @@ payload.commitments = commitments(config, payload, transactions);
 payload.houseCompare = houseCompare(config, payload, transactions);
 payload.moveCosts = moveCosts(path.join(SRC, 'move-costs.csv'), config, transactions);
 payload.affordability = affordability(config, payload, transactions, cats12);
+payload.refinance = refinance(config, payload);
 
 // ── Encrypt & write ─────────────────────────────────────────────────────────
 

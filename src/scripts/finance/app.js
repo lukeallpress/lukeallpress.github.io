@@ -207,6 +207,165 @@ function renderSidebar() {
     </div>`;
 }
 
+
+// ═══ VIEW: Refinance ════════════════════════════════════════════════════════
+
+function viewRefinance() {
+  const root = document.createElement('div');
+  const R = D.refinance;
+  const m = D.mortgage;
+  const bd = m.buydown;
+  const L = R.liquidity;
+  const recast = R.scenarios.find((s) => s.key === 'recast-now');
+  const sameRate = R.scenarios.find((s) => s.key === `refi-${Math.round(m.rate * 10000)}-360`);
+
+  root.append(h(`<div class="view-intro">
+    <h2>Refinancing, and the thing to do first</h2>
+    <p>Every figure below is arithmetic over stated assumptions. Rates a year out are
+    guesses, UWM's recast policy needs confirming, and none of this is advice — it is the
+    maths a conversation with a lender should start from.</p>
+  </div>`));
+
+  // The premise, corrected.
+  root.append(h(`<div class="alert alert--sum">
+    <div class="alert-when">The timing</div>
+    <div>
+      <h4>Nothing locks you in for a year. But leaving early hands money back.</h4>
+      <p>The note carries <b>no prepayment penalty</b> and no seasoning clause, so the loan
+      could be refinanced tomorrow. What waiting protects is the buydown. Clause 7 of the
+      Temporary Buydown Agreement: if the note is <em>prepaid in full</em> before the whole
+      subsidy has been disbursed, the remainder goes back to UWM. A refinance is a prepayment
+      in full — so refinancing today forfeits the
+      <b>${money(R.subsidyRemaining)}</b> still to come, at ${money2(bd.monthlySubsidy)} a month
+      through ${monthLong(R.buydownEnds)}.</p>
+      <p>The same clause points at the better move. It is triggered by prepayment in
+      <em>full</em>. A partial prepayment followed by a recast is not a payoff — so the subsidy
+      survives it.</p>
+    </div>
+  </div>`));
+
+  // The proposal.
+  root.append(h('<h3 class="section-head">The proposal</h3>'));
+  root.append(h(`
+    <section class="proposal">
+      <div class="proposal-head">
+        <div class="proposal-step">Step 1 · now</div>
+        <h3>Recast, don't refinance — put the ${money(R.cashIn)} in and ask UWM to re-amortise</h3>
+      </div>
+      <div class="proposal-grid">
+        <div class="proposal-fig">
+          <span class="proposal-fig-label">Costs</span>
+          <span class="proposal-fig-value">${money(recast.cost)}</span>
+          <span class="proposal-fig-sub">versus ${money(sameRate.cost)} to refinance</span>
+        </div>
+        <div class="proposal-fig">
+          <span class="proposal-fig-label">Payment falls to</span>
+          <span class="proposal-fig-value">${money(recast.pi)}</span>
+          <span class="proposal-fig-sub">P&amp;I, from ${money(m.monthlyPI)}</span>
+        </div>
+        <div class="proposal-fig proposal-fig--good">
+          <span class="proposal-fig-label">Saves from Sep 2027</span>
+          <span class="proposal-fig-value">${money(recast.savingVsNothing)}<small>/mo</small></span>
+          <span class="proposal-fig-sub">break-even in ${recast.breakEvenMonths} of a month</span>
+        </div>
+      </div>
+      <p class="proposal-note">Same rate, same payoff date, no closing costs, no new 30-year
+      clock, and the buydown keeps paying. It cannot lower your rate — which is exactly why it
+      is not a substitute for refinancing, and exactly why it does not depend on the market
+      doing anything.</p>
+      <p class="proposal-note"><b>What it does to this month</b> depends on one question for
+      UWM: whether the ${money2(bd.monthlySubsidy)} subsidy keeps applying against the smaller
+      payment. If it does, you pay <b>${money(recast.subsidised)}</b> instead of
+      ${money(R.payingNow)} — ${money(R.payingNow - recast.subsidised)}/mo straight away. If it
+      does not, you pay ${money(recast.total)} until September 2027 and the full
+      ${money(recast.savingVsNothing)} arrives then.</p>
+      <p class="proposal-note proposal-verify">${esc(recast.verify)}</p>
+    </section>`));
+
+  root.append(h(`
+    <section class="proposal proposal--later">
+      <div class="proposal-head">
+        <div class="proposal-step">Step 2 · ${monthLong(R.buydownEnds)}, only if rates have moved</div>
+        <h3>Refinance then, from the smaller balance the recast left behind</h3>
+      </div>
+      <p class="proposal-note">Refinancing at today's ${pct(m.rate * 100, 3)} would save
+      ${money(sameRate.savingVsNothing)}/mo and cost ${money(sameRate.cost)} to do — less than the
+      recast achieves for ${money(recast.cost)}. So a refinance is only worth doing if the rate
+      genuinely falls. Roughly, it needs to be under <b>6.25%</b> to beat simply recasting, and
+      the further below that it goes, the more it is worth.</p>
+    </section>`));
+
+  // The rate table.
+  root.append(h('<h3 class="section-head">If rates are comparable in September 2027</h3>'));
+  root.append(h(`<p class="lede">All rows compared at the same moment — September 2027, after
+    the buydown ends and the county reassesses — so escrow is ${money(R.escrowLater)} either way
+    and the only thing changing is the loan. Closing costs are
+    <span class="est">assumed at ${pct(R.closingRate * 100, 1)}</span> of the balance and rolled
+    in, which is why the refinanced principal is larger than the recast one.</p>`));
+
+  const tbl = h(`<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Scenario</th><th class="num">Rate</th><th class="num">Balance</th>
+    <th class="num">P&amp;I</th><th class="num">All-in</th><th class="num">vs doing nothing</th>
+    <th class="num">Costs</th><th class="num">Break-even</th></tr></thead>
+    <tbody></tbody></table></div>`);
+  const tb = tbl.querySelector('tbody');
+  for (const s of R.scenarios) {
+    const best = s.key === 'recast-now';
+    tb.append(h(`<tr class="${best ? 'tr-highlight' : ''}${s.key === 'nothing' ? ' row-zero' : ''}">
+      <td>${esc(s.label)}${s.term === 300 ? ' <span class="pill">25 yr</span>' : ''}
+        ${best ? '<span class="pill pill--done">proposed</span>' : ''}
+        ${s.keepsBuydown && s.key !== 'nothing' ? '<span class="pill">keeps buydown</span>' : ''}</td>
+      <td class="num">${pct(s.rate * 100, 3)}</td>
+      <td class="num">${money(s.principal)}</td>
+      <td class="num">${money(s.pi)}</td>
+      <td class="num"><b>${money(s.comparable)}</b></td>
+      <td class="num ${s.savingVsNothing > 0 ? 'pos' : 'muted'}">${s.savingVsNothing > 0 ? `−${money(s.savingVsNothing)}` : '—'}</td>
+      <td class="num muted">${s.cost ? money(s.cost) : '—'}</td>
+      <td class="num muted">${s.breakEvenMonths ? `${s.breakEvenMonths} mo` : '—'}</td>
+    </tr>`));
+  }
+  root.append(tbl);
+
+  // The trade-off nobody mentions.
+  root.append(h('<h3 class="section-head">What the ' + money(R.cashIn) + ' costs you</h3>'));
+  root.append(h(`<div class="alert alert--serious">
+    <div class="alert-when">The trade</div>
+    <div>
+      <h4>Runway roughly halves, from ${L.runwayNow} months to ${L.runwayAfter}</h4>
+      <p>The money is worth more against the mortgage than in the account —
+      ${money(L.interestAvoided)} a year of interest avoided at ${pct(m.rate * 100, 3)} against
+      ${money(L.interestForgone)} earned at ${pct(L.barclaysApy * 100, 2)}, a net
+      ${money(L.arbitrage)} a year. As arithmetic it is clearly worth doing.</p>
+      <p>But it converts your buffer into equity you cannot spend while you are still running a
+      deficit. Liquid cash goes from ${money(L.liquidNow)} to ${money(L.liquidAfter)}, and at a
+      burn of ${money(L.burnAfter)}/mo that is ${L.runwayAfter} months rather than
+      ${L.runwayNow}. Twenty months is not danger, but it is the difference between a problem
+      you can wait out and one you have to solve.</p>
+      <p>A middle path exists: recast with less. Half the amount buys roughly half the payment
+      reduction and keeps half the buffer, and the recast fee is the same either way.</p>
+    </div>
+  </div>`));
+
+  root.append(h(`<div class="method">
+    <h4>What would change these numbers</h4>
+    <p><b>UWM's recast policy.</b> The whole proposal rests on it. Most conventional servicers
+    recast, usually with a minimum principal reduction and a fee of a few hundred dollars, but
+    it is not a right — it is at the servicer's discretion. One phone call settles it, and it is
+    the call to make before anything else.</p>
+    <p><b>Whether the buydown subsidy survives a recast.</b> The agreement schedules fixed
+    dollar amounts against interest, so it should continue — but ask, because it is worth
+    ${money(R.subsidyRemaining)} and the answer decides whether the saving starts this month or
+    next September.</p>
+    <p><b>Rates.</b> The table spans ${pct(Math.min(...R.scenarios.map((s) => s.rate)) * 100, 3)}
+    to ${pct(m.rate * 100, 3)} because nobody knows. Treat it as a map, not a forecast.</p>
+    <p><b>Closing costs</b> are <span class="est">estimated at ${pct(R.closingRate * 100, 1)}</span>
+    and rolled into the balance. A real Loan Estimate replaces that guess, and lender credits can
+    move it a long way.</p>
+  </div>`));
+
+  return root;
+}
+
 // ═══ VIEW: Commitments ══════════════════════════════════════════════════════
 
 function viewCommitments() {
@@ -1746,6 +1905,7 @@ function viewTransactions() {
 const VIEWS = {
   affordability: { label: 'Can we afford it?', render: viewAffordability },
   commitments: { label: 'Committed monthly', render: viewCommitments },
+  refinance: { label: 'Refinance', render: viewRefinance },
   overview: { label: 'Overview', render: viewOverview },
   cashflow: { label: 'Cash flow', render: viewCashflow },
   paycheck: { label: 'Paycheck', render: viewPaycheck },
