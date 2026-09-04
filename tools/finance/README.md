@@ -19,11 +19,16 @@ appear anywhere in this repo's source — they all travel inside the encrypted f
    npm run finance          # prompts for the passphrase
    ```
 
-4. Commit the encrypted output and push:
+4. Or do all of it in one:
 
    ```bash
-   git add public/finances/data.enc.json && git commit -m "Update finance data" && git push
+   npm run finance:publish
    ```
+
+   That rebuilds, re-encrypts, commits the blob and pushes — including any code
+   commits waiting to go. It prompts for the passphrase like `npm run finance` does,
+   and it is safe to run when the payload has not changed: the commit step is
+   skipped rather than failing the chain.
 
    `data.enc.json` is a **tracked** file and should stay one. Do not add it to
    `.gitignore`: ignoring an already-tracked file does not untrack it, it only means
