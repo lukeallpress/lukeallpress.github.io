@@ -234,12 +234,45 @@
       .shell[data-side='hidden'] { grid-template-columns: minmax(0, 1fr); max-width: 84rem; }
       .shell[data-side='hidden'] .side { display: none; }
       main { min-width: 0; }
+      /* Sticky only where the panel has a column of its own. Left on at narrow
+         widths it pins full-width across the top and the whole page scrolls
+         underneath it, which is exactly what it did. */
+      @media (min-width: 1101px) {
+        .side { position: sticky; top: 4.4rem; max-height: calc(100svh - 5.5rem); overflow-y: auto; }
+        /* Specificity, not order: the base .side-summary rule is defined below
+           this block, so a bare class selector here would lose to it. */
+        .side-card > .side-summary { display: none; }
+        .side-card { padding: 1rem 1.1rem 1.1rem; }
+      }
       @media (max-width: 1100px) {
-        .shell { grid-template-columns: minmax(0, 1fr); }
-        .side { order: -1; }
+        .shell { grid-template-columns: minmax(0, 1fr); gap: 0.85rem; }
+        .side { order: -1; position: static; }
+        /* Collapsed, the card is a single tappable bar carrying the headline. */
+        .side-card { padding: 0; }
+        .side-card[open] { padding: 0 1.1rem 1.1rem; }
+        .side-card > *:not(summary) { display: none; }
+        .side-card[open] > * { display: revert; }
+        .side-card[open] .side-rows { display: grid; }
+        /* The summary bar already carries the title and the headline number, so
+           expanding should not repeat both back at you. */
+        .side-card[open] .side-head,
+        .side-card[open] .side-total { display: none; }
+        .side-card[open] .side-sub { margin-top: 0.2rem; }
       }
 
-      .side { position: sticky; top: 4.4rem; }
+      .side-summary {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+        padding: 0.7rem 1.1rem; cursor: pointer; list-style: none;
+        font-size: 0.9rem; user-select: none;
+      }
+      .side-summary::-webkit-details-marker { display: none; }
+      .side-summary::after {
+        content: '▾'; color: var(--ink-3); font-size: 0.8rem; transition: transform 0.15s;
+      }
+      .side-card[open] > .side-summary::after { transform: rotate(180deg); }
+      .side-summary-title { font-family: var(--serif); font-size: 1rem; }
+      .side-summary-delta { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--neg); }
+      .side-summary-delta small { font-weight: 400; color: var(--ink-3); font-size: 0.75em; }
       .side-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem 1.1rem; box-shadow: var(--shadow); }
       .side-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.15rem; }
       .side-head h3 { font-size: 1rem; }

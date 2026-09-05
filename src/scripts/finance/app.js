@@ -164,8 +164,15 @@ function renderSidebar() {
   const electric = H.rows.find((r) => r.key === 'electric');
   const E = H.energy;
 
+  // A <details> rather than a <div>: on a phone this panel sits above the
+  // content and full width, so it has to be collapsible or it is the only thing
+  // on screen. Open state is set from the viewport below, not from markup.
   host.innerHTML = `
-    <div class="side-card">
+    <details class="side-card" id="fin-side-card">
+      <summary class="side-summary">
+        <span class="side-summary-title">Old house → new</span>
+        <span class="side-summary-delta">+${money(H.change)}<small>/mo</small></span>
+      </summary>
       <div class="side-head">
         <h3>Old house → new</h3>
       </div>
@@ -204,7 +211,18 @@ function renderSidebar() {
        ${money(electric.annualised)}, putting the real increase at
        <b>${money(H.changeAnnualised)}</b>.` : ''}
       </p>
-    </div>`;
+    </details>`;
+
+  // Open on a wide screen where it has its own column; collapsed on a phone,
+  // where it would otherwise fill the viewport before any content is reached.
+  const card = host.querySelector('#fin-side-card');
+  const wide = window.matchMedia('(min-width: 1101px)');
+  const sync = () => { card.open = wide.matches; };
+  sync();
+  // The very first read can happen before the viewport reports a real width,
+  // which would leave a desktop layout with the panel collapsed.
+  requestAnimationFrame(sync);
+  wide.addEventListener('change', sync);
 }
 
 
