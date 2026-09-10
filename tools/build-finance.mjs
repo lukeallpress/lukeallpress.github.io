@@ -346,6 +346,28 @@ if (pay.tax && Math.abs(pay.tax.totalGap) > 1500) {
   });
 }
 
+// 7b. W-4 catch-up figures that must not survive into next year.
+const w4 = config.taxAssumptions?.w4Recommendations;
+if (w4?.januaryReset?.required) {
+  dq.push({
+    severity: 'serious',
+    title: `Reset both W-4s by ${w4.januaryReset.by} — the current ones are catch-up figures`,
+    detail: w4.januaryReset.why,
+  });
+  dq.push({
+    severity: 'warning',
+    title: `Take-home drops to ${'$'}${w4.cashImpact.monthlyAfter.toLocaleString()}/mo for the rest of 2026`,
+    detail: w4.cashImpact.note,
+  });
+}
+if (config.taxAssumptions?.safeHarbor?.verify) {
+  dq.push({
+    severity: 'good',
+    title: 'A cheaper way through Q4 exists, and it needs one number from the 2025 return',
+    detail: `${config.taxAssumptions.safeHarbor.note} ${config.taxAssumptions.safeHarbor.howToFind}`,
+  });
+}
+
 // 8. Payroll still has the old address.
 if (config.income.payrollAddressStale) {
   dq.push({
