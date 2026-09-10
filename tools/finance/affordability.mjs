@@ -203,7 +203,19 @@ export function affordability(config, payload, transactions, catRollup) {
     .map((r) => ({ ...r, monthly: round(r.annual / 12, 2) }))
     .sort((a, b) => b.annual - a.annual);
 
+  // Income that exists but is not relied on. Shown for what it is worth, kept
+  // out of the scenarios: a mortgage should not be made to work by money that
+  // might not arrive again.
+  const side = config.income?.sideBusiness ?? null;
+  const sideIncome = side ? {
+    ...side,
+    monthlyNet: round((side.afterTax?.netApprox ?? 0) / 12),
+    closesShareOfGap: round(((side.afterTax?.netApprox ?? 0) / 12)
+      / Math.max(1, -scenarios[0].surplus) * 100, 0),
+  } : null;
+
   return {
+    sideIncome,
     baseline,
     measuredBaseline,
     plannedMonthly,

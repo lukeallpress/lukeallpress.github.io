@@ -106,6 +106,35 @@ function taxProjection(config, hh) {
   const a = config.taxAssumptions;
   if (!a) return null;
 
+  // Where the IRS estimator has been run, use it. It knows the current tables,
+  // handles two jobs properly, and — unlike the model this replaced — was told
+  // about the side-business income. The hand-rolled version below is kept for
+  // the case where no estimator run exists, but it should not override one.
+  if (a.estimator) {
+    const e = a.estimator;
+    return {
+      source: 'IRS Tax Withholding Estimator',
+      runOn: e.runOn,
+      assumptions: a,
+      grossIncome: e.grossIncome,
+      taxableIncome: e.taxableIncome,
+      grossFederalTax: e.liability,
+      credits: e.credits,
+      federalOnWages: round(e.liability - e.credits),
+      federalWithheld: e.withholding,
+      owed: e.owed,
+      // The monthly model carries only what repeats. 2026 is inflated by the
+      // Wealthfront gain and a side-business year with no withholding at all.
+      recurringAnnual: a.recurring?.annualShortfallOnWages ?? e.owed,
+      recurringNote: a.recurring?.note ?? null,
+      openQuestions: a.openQuestions ?? [],
+      incomeComponents: a.incomeComponents ?? null,
+      recommendedExtraWithholding: e.recommendedExtraWithholding,
+      totalGap: a.recurring?.annualShortfallOnWages ?? e.owed,
+      oneOffGap: round(e.owed - (a.recurring?.annualShortfallOnWages ?? 0)),
+    };
+  }
+
   const federalWages = round(hh.annualGross - hh.annualPreTax);
   const taxableIncome = Math.max(0, round(federalWages - a.standardDeduction));
 
