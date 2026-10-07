@@ -164,21 +164,12 @@ Coach (Prototype) · `5` District MCP Server · `6` Partnership Tracker · `7` S
 
 ---
 
-## Private finance dashboard (`/finances`)
+## Private finance dashboard — moved out
 
-An unlisted, passphrase-gated household finance dashboard lives at `/finances`. It is
-**not** part of the site: no nav link, no sitemap entry, `noindex`, and no Base layout.
-
-- **Nothing private is ever committed.** `finance-private/` (raw exports, balances,
-  mortgage terms, cleartext payload) is gitignored. The only thing published is
-  `public/finances/data.enc.json` — one AES-256-GCM blob, decrypted in the browser.
-- **No identifying strings in source.** Addresses, account names and figures all
-  travel inside the encrypted payload. Keep it that way when editing the views.
-- Rebuild with `npm run finance` (prompts for the passphrase), then commit the blob.
-- The tax/withholding projection is **arithmetic over stated assumptions, not advice**.
-  Every assumption is rendered on the page with a dotted underline and lives in
-  `config.json` → `taxAssumptions`. Keep it that way.
-- Full documentation: `tools/finance/README.md`.
+The household finance dashboard that used to live here now has its own repo:
+**github.com/lukeallpress/finances**, published at the same URL,
+https://lukeallpress.github.io/finances/ (a GitHub *project* repo named `finances`
+serves exactly that path). Nothing finance-related belongs in this repo any more.
 
 ---
 
@@ -193,20 +184,6 @@ Search the repo for `VERIFY` and `TODO`. Currently outstanding:
 - **LinkedIn profile** updates were prepared but not yet applied (Featured, Website, Projects,
   role updates). Dates still needed for the TLE Cohort and Agentic Builders Committee entries.
 - Optional: professional headshot; possible AzTEA Fall Conference talks (unconfirmed).
-- **Finance dashboard:** the $60,000 MidFirst wire of 2026-09-01 has no matching account
-  on the balance sheet; the Simplifi payroll feed has gaps from mid-2025; HSA Checking and
-  Barclays Savings have stale connections. All three are surfaced on the dashboard itself.
-- **Finance dashboard — needs Luke:** the realised gain on the July 2026 Wealthfront sale
-  (estimated at 48% of proceeds from the contribution ledger; the real figure is in Wealthfront
-  under Documents → Tax documents → Realized gains and losses, and on the 1099-B in February);
-  payroll still shows the old address on both direct-deposit receipts.
-- **Barclays Savings has no feed** — they stopped sharing with budgeting apps. Its balance and
-  recent rows are typed into `config.json` by hand (`manualUpdate`, `manualTransactions`) and
-  go stale; refresh them when rebuilding. Simplifi was carrying a five-month-old figure that
-  understated net worth by $66,262.
-- Confirmed with Luke: 3 qualifying children; the $60,000 MidFirst wire of 2026-09-01 repaid a
-  family loan taken toward the down payment, modelled as a liability for July–August; the second
-  $80,000 of 2026-09-01 went to Barclays Savings and is still on hold.
 
 ## Notable history
 

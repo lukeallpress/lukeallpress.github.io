@@ -12,13 +12,7 @@ import sitemap from '@astrojs/sitemap';
 // approach (current) gives the cleanest URL and is recommended.
 export default defineConfig({
   site: 'https://lukeallpress.github.io',
-  integrations: [
-    sitemap({
-      // The finance dashboard is private (noindex, passphrase-gated). Keep it
-      // out of the sitemap so it is never advertised to crawlers.
-      filter: (page) => !page.includes('/finances'),
-    }),
-  ],
+  integrations: [sitemap()],
   // Later, to use a custom domain: keep `site` pointing at the final domain,
   // add a CNAME file in /public, and point DNS at GitHub Pages. No rebuild logic
   // changes are required.

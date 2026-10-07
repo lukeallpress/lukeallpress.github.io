@@ -4,8 +4,35 @@
     {
       "name": "luke-site",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 4321
+    },
+    {
+      "name": "coaching",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4330",
+        "--directory",
+        "/Users/lallpress/Dropbox/code/projects/coaching"
+      ],
+      "port": 4330
+    },
+    {
+      "name": "finances",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "/Users/lallpress/Dropbox/code/projects/finances"
+      ],
+      "port": 4322,
+      "url": "http://localhost:4322"
     }
   ]
 }

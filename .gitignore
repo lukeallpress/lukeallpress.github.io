@@ -29,14 +29,7 @@ NOTES.local.md
 # local-only Claude settings
 .claude/settings.local.json
 
-# ── Personal finance dashboard ──────────────────────────────────
-# Raw statements, balances, mortgage terms, generated cleartext payload.
-# NOTHING in here is ever committed. Only the AES-encrypted blob in
-# public/finances/data.enc.json goes to the public repo.
+# Legacy private finance data. The dashboard moved to its own repo
+# (github.com/lukeallpress/finances) and this directory is a leftover copy —
+# still ignored so it can never be committed while it sits here.
 finance-private/
-
-# NOTE: public/finances/data.enc.json is deliberately NOT ignored. It is tracked,
-# and must stay tracked — gitignoring a tracked file does not untrack it, it just
-# means `git add -A` silently stages its deletion. The guard against publishing a
-# weak or test-encrypted blob is the passphrase entropy check in
-# tools/build-finance.mjs, not this file.
