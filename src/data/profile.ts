@@ -115,13 +115,20 @@ export type SpeakingItem = {
   title: string;
   venue: string;
   year: string;
-  kind: 'Keynote' | 'Session' | 'Workshop' | 'Panel' | 'Webinar';
+  kind: 'Keynote' | 'Session' | 'Workshop' | 'Panel' | 'Webinar' | 'Roundtable';
   note?: string;
   verify?: boolean;
 };
 
 // Ordered most-recent first.
 export const SPEAKING: SpeakingItem[] = [
+  {
+    title: 'Agentic Builders',
+    venue: 'ERDI NCITL Symposium — Chicago',
+    year: 'Oct 2026',
+    kind: 'Roundtable',
+    note: 'Leading a discussion roundtable at ERDI’s National Council of Innovative Technology Leaders symposium: when staff, students, and IT can have AI take actions and build software — not just answer questions — how do you govern the security, architecture, privacy, and access?',
+  },
   {
     title: 'Becoming a Builder in the Age of AI',
     venue: 'AZ CSTA',
