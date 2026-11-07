@@ -123,11 +123,32 @@ export type SpeakingItem = {
 // Ordered most-recent first.
 export const SPEAKING: SpeakingItem[] = [
   {
+    title: 'Cybersecurity for K12 Leaders',
+    venue: 'CoSN Driving K12 Innovation — Report Launch Webinar',
+    year: 'Nov 2026',
+    kind: 'Webinar',
+    note: 'Speaking on cybersecurity at the launch webinar for CoSN’s Driving K12 Innovation report, as a member of its Innovation Advisory Board.',
+  },
+  {
+    title: 'Trusted Learning Environment in Practice',
+    venue: 'Arizona CIO/CTO Forum',
+    year: 'Nov 2026',
+    kind: 'Session',
+    note: 'Concurrent session on turning student-data-privacy principles into routines — assembling evidence, involving leadership, and working toward CoSN TLE seals.',
+  },
+  {
     title: 'Agentic Builders',
     venue: 'ERDI NCITL Symposium — Chicago',
     year: 'Oct 2026',
     kind: 'Roundtable',
     note: 'Leading a discussion roundtable at ERDI’s National Council of Innovative Technology Leaders symposium: when staff, students, and IT can have AI take actions and build software — not just answer questions — how do you govern the security, architecture, privacy, and access?',
+  },
+  {
+    title: 'Agents and AI Infrastructure',
+    venue: 'AzTEA CIO/CTO Meetup',
+    year: 'Oct 2026',
+    kind: 'Session',
+    note: 'District AI infrastructure for technology leaders: an MCP server for safe agentic tasks, self-hosted open-source models, and keeping identity, permissions, and auditability around access to district data.',
   },
   {
     title: 'Becoming a Builder in the Age of AI',
@@ -264,6 +285,12 @@ export const SKILLS: SkillGroup[] = [
 export type AwardItem = { name: string; org: string; year: string; detail?: string };
 
 export const AWARDS: AwardItem[] = [
+  {
+    name: 'Synergy Achievement Award',
+    org: 'Edupoint (Synergy SIS)',
+    year: '2026',
+    detail: 'Recognized Agua Fria UHSD’s Innovative Solutions team for its student-information and data work — a team award shared with SIS and data colleagues.',
+  },
   {
     name: 'District Team Leadership Award',
     org: 'CoSN (Consortium for School Networking)',
