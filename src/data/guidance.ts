@@ -15,12 +15,20 @@ export type GuidanceItem = {
 
 export const GUIDANCE: GuidanceItem[] = [
   {
-    title: '“Purposeful Technology, Powerful Learning” — Agua Fria Chapter',
-    org: 'CoSN (Consortium for School Networking)',
+    title: 'The AI-Ready School Leader (book chapter)',
+    org: 'Ed. Brian Graham',
     year: '2026',
     status: 'Published',
     description:
-      'Agua Fria’s Innovative Solutions work featured as the closing chapter of CoSN’s book on purposeful technology in schools — the district’s story of building in-house tools and putting responsible AI into daily practice.',
+      'Co-authored a case-study chapter with Lauren Owens for this collection of AI-leadership stories from K12 district leaders — Agua Fria’s practical path from AI curiosity to responsible, district-wide implementation.',
+  },
+  {
+    title: '“Purposeful Technology, Powerful Learning” — Agua Fria Chapter',
+    org: 'Stacy Hawthorne · CoSN',
+    year: '2026',
+    status: 'Published',
+    description:
+      'Agua Fria featured as the closing chapter of “Purposeful Technology, Powerful Learning: You Can’t Ban Possibility,” the book by CoSN board chair Stacy Hawthorne — the district’s story of building in-house tools and putting responsible AI into daily practice.',
     // href: 'https://…',  // add the public link when available
   },
   {
