@@ -77,7 +77,7 @@ export const EXPERIENCE: ExperienceItem[] = [
     org: 'Agua Fria High School',
     role: 'Math & Science Teacher',
     start: 'Jul 2013',
-    end: 'Jun 2018',
+    end: 'Jun 2019',
     summary: 'Taught math and science, grades 10–12.',
   },
   {
@@ -115,13 +115,20 @@ export type SpeakingItem = {
   title: string;
   venue: string;
   year: string;
-  kind: 'Keynote' | 'Session' | 'Workshop' | 'Panel' | 'Webinar' | 'Roundtable';
+  kind: 'Keynote' | 'Session' | 'Workshop' | 'Panel' | 'Webinar' | 'Roundtable' | 'Summit';
   note?: string;
   verify?: boolean;
 };
 
 // Ordered most-recent first.
 export const SPEAKING: SpeakingItem[] = [
+  {
+    title: 'Agua Fria AI Summit 2027',
+    venue: 'Agua Fria Union High School District — Hilltop',
+    year: 'Feb 2027',
+    kind: 'Summit',
+    note: 'Co-leading the district’s second annual AI summit, bringing Arizona educators together around practical, responsible AI — with district and NAU AI Alliance partners. The 2026 summit drew 241 attendees.',
+  },
   {
     title: 'Cybersecurity for K12 Leaders',
     venue: 'CoSN Driving K12 Innovation — Report Launch Webinar',
@@ -209,19 +216,19 @@ export const SPEAKING: SpeakingItem[] = [
   },
   {
     title: 'AI Implementation in K12',
-    venue: 'Arizona CIO/CTO Summit',
+    venue: 'Arizona CIO/CTO Forum',
     year: '2024',
     kind: 'Session',
     note: 'Moving districts from AI curiosity to responsible, practical implementation.',
-    verify: true, // VERIFY: confirm exact event name + year with Luke
+    verify: true, // VERIFY: name confirmed (Forum); still confirm the year with Luke
   },
   {
     title: 'Data-Informed RTI Systems',
-    venue: 'Arizona CIO/CTO Summit',
+    venue: 'Arizona CIO/CTO Forum',
     year: '2023',
     kind: 'Session',
     note: 'Designing Response-to-Intervention systems that make good use of staff and student time.',
-    verify: true, // VERIFY: confirm exact event name + year with Luke
+    verify: true, // VERIFY: name confirmed (Forum); still confirm the year with Luke
   },
 ];
 
@@ -237,6 +244,17 @@ export const COMMITTEES: CommitteeItem[] = [
     org: 'CoSN Driving K12 Innovation Advisory Board',
     role: 'Advisory board member',
     detail: 'Member of CoSN’s global advisory board producing the Driving K12 Innovation trend reports on emerging technology in teaching and learning.',
+  },
+  {
+    org: 'CoSN AI & Data Privacy Committees',
+    role: 'Committee member',
+    detail: 'Contributing to CoSN’s national committee work on artificial intelligence and student-data privacy.',
+  },
+  {
+    org: 'CoSN 9GOT Leadership Cohort',
+    role: 'Cohort member',
+    detail: 'Selected for a CoSN leadership cohort developing the next generation of K12 technology leaders.',
+    verify: true, // VERIFY: confirm the cohort's full name/description with Luke
   },
   {
     org: 'Arizona AI Alliance',

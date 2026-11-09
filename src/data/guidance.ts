@@ -15,6 +15,23 @@ export type GuidanceItem = {
 
 export const GUIDANCE: GuidanceItem[] = [
   {
+    title: '“Purposeful Technology, Powerful Learning” — Agua Fria Chapter',
+    org: 'CoSN (Consortium for School Networking)',
+    year: '2026',
+    status: 'Published',
+    description:
+      'Agua Fria’s Innovative Solutions work featured as the closing chapter of CoSN’s book on purposeful technology in schools — the district’s story of building in-house tools and putting responsible AI into daily practice.',
+    // href: 'https://…',  // add the public link when available
+  },
+  {
+    title: 'Arizona NDPA Exhibit G — AI Questionnaire',
+    org: 'Arizona education community',
+    year: '2026',
+    status: 'Published',
+    description:
+      'Co-developed a standardized AI addendum for the Arizona NDPA data-privacy agreement — a shared Exhibit G questionnaire, built with colleagues from Mesa and Deer Valley and shaped by about a dozen practitioners, that helps districts review AI vendors consistently.',
+  },
+  {
     title: '2026 Arizona AI Guidance',
     org: 'Arizona AI Alliance',
     year: '2026',
